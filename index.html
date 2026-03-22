@@ -60,126 +60,17 @@
 
     <section>
       <div class="section-label">Reading</div>
-      <div class="books-shelf" id="books-shelf">
-
-        <div class="books-group">
-          <div class="books-group-label">Currently reading</div>
-          <div class="books-row" id="currently-reading">
-            <!-- Fallback content, replaced by JS if RSS loads -->
-            <a class="book" href="https://www.goodreads.com/user/show/196647782-catalin" target="_blank" rel="noopener">
-              <img src="https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1316637735l/100303.jpg" alt="Prague in Black and Gold">
-              <div class="book-info">
-                <div class="book-title">Prague in Black and Gold</div>
-                <div class="book-author">Peter Demetz</div>
-              </div>
-            </a>
-            <a class="book" href="https://www.goodreads.com/user/show/196647782-catalin" target="_blank" rel="noopener">
-              <img src="https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1677833092l/80005.jpg" alt="The Discarded Image">
-              <div class="book-info">
-                <div class="book-title">The Discarded Image</div>
-                <div class="book-author">C.S. Lewis</div>
-              </div>
-            </a>
-            <a class="book" href="https://www.goodreads.com/user/show/196647782-catalin" target="_blank" rel="noopener">
-              <img src="https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1442302751l/26533127._SY475_.jpg" alt="The Oxygen Advantage">
-              <div class="book-info">
-                <div class="book-title">The Oxygen Advantage</div>
-                <div class="book-author">Patrick McKeown</div>
-              </div>
-            </a>
-            <a class="book" href="https://www.goodreads.com/user/show/196647782-catalin" target="_blank" rel="noopener">
-              <img src="https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1567191193l/25698._SY475_.jpg" alt="The Wealth of Nations">
-              <div class="book-info">
-                <div class="book-title">The Wealth of Nations</div>
-                <div class="book-author">Adam Smith</div>
-              </div>
-            </a>
-          </div>
+      <div class="reading-list">
+        <div class="reading-item">
+          <span class="reading-label">Currently reading</span>
+          <span class="reading-value">Prague in Black and Gold — Peter Demetz</span>
         </div>
-
-        <div class="books-group">
-          <div class="books-group-label">Last read</div>
-          <div class="books-row" id="last-read">
-            <a class="book" href="https://www.goodreads.com/user/show/196647782-catalin" target="_blank" rel="noopener">
-              <img src="https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1629634899l/57347786.jpg" alt="Powers and Thrones">
-              <div class="book-info">
-                <div class="book-title">Powers and Thrones</div>
-                <div class="book-author">Dan Jones</div>
-              </div>
-            </a>
-            <a class="book" href="https://www.goodreads.com/user/show/196647782-catalin" target="_blank" rel="noopener">
-              <img src="https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1575339793l/48890486.jpg" alt="Breath">
-              <div class="book-info">
-                <div class="book-title">Breath</div>
-                <div class="book-author">James Nestor</div>
-              </div>
-            </a>
-            <a class="book" href="https://www.goodreads.com/user/show/196647782-catalin" target="_blank" rel="noopener">
-              <img src="https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1348336248l/226630.jpg" alt="The Geography of Thought">
-              <div class="book-info">
-                <div class="book-title">The Geography of Thought</div>
-                <div class="book-author">Richard E. Nisbett</div>
-              </div>
-            </a>
-          </div>
+        <div class="reading-item">
+          <span class="reading-label">Last read</span>
+          <span class="reading-value">Powers and Thrones — Dan Jones</span>
         </div>
-
       </div>
-
-      <a href="https://www.goodreads.com/user/show/196647782-catalin" target="_blank" rel="noopener" class="goodreads-link">See all on Goodreads &rarr;</a>
     </section>
-
-  </main>
-
-  <script>
-    const GOODREADS_USER = '196647782';
-    const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-
-    async function fetchShelf(shelf, containerId, limit) {
-      try {
-        const url = `${CORS_PROXY}${encodeURIComponent(`https://www.goodreads.com/review/list_rss/${GOODREADS_USER}?shelf=${shelf}`)}`;
-        const res = await fetch(url);
-        if (!res.ok) return;
-        const text = await res.text();
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(text, 'text/xml');
-        const items = xml.querySelectorAll('item');
-        if (items.length === 0) return;
-
-        const container = document.getElementById(containerId);
-        const books = [];
-
-        items.forEach((item, i) => {
-          if (i >= limit) return;
-          const title = item.querySelector('title')?.textContent || '';
-          const author = item.querySelector('author_name')?.textContent || '';
-          const link = item.querySelector('link')?.textContent || '#';
-          const desc = item.querySelector('description')?.textContent || '';
-          const imgMatch = desc.match(/src="([^"]+)"/);
-          const img = imgMatch ? imgMatch[1] : '';
-
-          books.push(`
-            <a class="book" href="${link}" target="_blank" rel="noopener">
-              <img src="${img}" alt="${title.replace(/"/g, '&quot;')}">
-              <div class="book-info">
-                <div class="book-title">${title}</div>
-                <div class="book-author">${author}</div>
-              </div>
-            </a>
-          `);
-        });
-
-        if (books.length > 0) {
-          container.innerHTML = books.join('');
-        }
-      } catch (e) {
-        // Keep static fallback
-      }
-    }
-
-    fetchShelf('currently-reading', 'currently-reading', 4);
-    fetchShelf('read', 'last-read', 3);
-  </script>
 
   <footer>
     <div class="container">
