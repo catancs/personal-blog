@@ -1,26 +1,5 @@
-# personal-blog
+# Personal Blog
 
-My personal website and blog. Built with plain HTML and CSS, no frameworks, no build step.
+This is my corner of the internet. A place where I share what I'm working on, write about things I find interesting, and put my projects out there.
 
-## Structure
-
-```
-index.html          → Home (intro, latest posts)
-projects.html       → GitHub projects timeline
-about.html          → About me + work with me
-contact.html        → Email, GitHub, LinkedIn
-posts/              → Blog posts
-style.css           → All styling
-```
-
-## Run locally
-
-Open `index.html` in a browser. That's it.
-
-## Deploy
-
-Works out of the box with GitHub Pages, Netlify, or any static hosting.
-
-## License
-
-MIT
+If you want to get in touch or learn more about what I do, everything is on the site.
