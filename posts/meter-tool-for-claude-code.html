@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meter: a cost tracker for Claude Code – Catalin-Stefan Niculescu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <nav>
+    <div class="container">
+      <a href="../index.html" class="nav-name">catalin niculescu</a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../projects.html">Projects</a></li>
+        <li><a href="../about.html">About</a></li>
+        <li><a href="../contact.html">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <h1 style="font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 0.5rem;">Meter: a cost tracker for Claude Code</h1>
+
+    <div class="post-meta">
+      <span>22 March 2026</span>
+      <a href="https://github.com/catancs/meter" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+    </div>
+
+    <div class="post-content">
+
+      <p>
+        I use <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> every day. It's become part of how I work. I open a terminal, type <code>claude</code>, describe what I need, and it writes code, runs commands, fixes bugs. It's genuinely useful.
+      </p>
+
+      <p>
+        But there's a problem I kept running into: I had no idea what any of it cost. I'd run prompts throughout the day, and at the end of the month I'd look at my bill and have no clue which session ate through my budget. Or I'd hit my rate limit wall right in the middle of something important and have to just stop.
+      </p>
+
+      <p>
+        As a student, that's not great. Every dollar counts. So I built <strong>meter</strong>.
+      </p>
+
+      <h2>What it does</h2>
+
+      <p>
+        Meter is a CLI wrapper that sits transparently between you and Claude Code. You keep typing <code>claude</code> exactly like before. Meter adds cost awareness on top:
+      </p>
+
+      <p>
+        It estimates the cost of each prompt before it runs, shows a live status bar while the agent works, and warns you when you're approaching your budget or rate limit. Everything shows up right inside Claude Code's own statusline, so there's no extra window or UI to deal with.
+      </p>
+
+<pre><code>◆ meter  claude-opus  ~$0.38  heavy  │  68% 5hr window  reset in 2h 14m</code></pre>
+
+      <h2>How the estimation works</h2>
+
+      <p>
+        I didn't want meter to be expensive to run (that would kind of defeat the purpose). So the estimation pipeline has three layers. The first two are free: one does keyword scoring and repo size analysis, the other checks your history for similar past tasks using trigram matching. Only if those two can't agree does it fire off a quick call to Haiku for a one-word complexity classification. That call costs about $0.0001.
+      </p>
+
+      <p>
+        Over time, as your history builds up, the second layer gets better and the third one fires less and less. It learns from your real patterns.
+      </p>
+
+      <h2>How I built it</h2>
+
+      <p>
+        The whole thing is written in <strong>TypeScript</strong> and published on npm as <code>meter-ai</code>. There are two main integration points with Claude Code:
+      </p>
+
+      <p>
+        For interactive sessions, meter hooks into Claude Code's native <a href="https://docs.anthropic.com/en/docs/claude-code/hooks">hook system</a>. There's a <code>UserPromptSubmit</code> hook that runs the estimation pipeline every time you submit a prompt, and a statusline integration that displays the result in Claude Code's bottom bar.
+      </p>
+
+      <p>
+        For one-shot commands like <code>claude "fix the bug"</code>, meter wraps the process in a PTY and shows a live status bar with real-time cost tracking.
+      </p>
+
+      <p>
+        All data stays local. History goes into a SQLite database at <code>~/.meter/history.db</code>, config lives in a JSON file, and there's no telemetry or cloud dependency.
+      </p>
+
+      <h2>For API users vs. plan subscribers</h2>
+
+      <p>
+        If you're paying per token, meter tracks actual dollar cost and warns you at budget thresholds. When you hit 80% of your per-task budget, it offers to switch you to a cheaper model automatically.
+      </p>
+
+      <p>
+        If you're on a plan like Claude Max or Pro, meter tracks your 5-hour usage window percentage instead. It warns you before you hit the rate limit wall so you don't get cut off mid-task.
+      </p>
+
+      <h2>Getting started</h2>
+
+<pre><code>npm install -g meter-ai
+meter init</code></pre>
+
+      <p>
+        That's it. <code>meter init</code> detects your shell, finds the real <code>claude</code> binary, sets up a transparent shim, installs estimation hooks into Claude Code, and writes your config. From that point on, every <code>claude</code> invocation runs through meter automatically.
+      </p>
+
+      <h2>Why I'm sharing this</h2>
+
+      <p>
+        I built meter because I needed it. I think a lot of people in the same situation, students and solo developers who use these tools daily but need to be mindful of what they spend, could use it too. It's open source, it's free, and it takes about 30 seconds to set up.
+      </p>
+
+      <p>
+        If you want to check it out, the code is on <a href="https://github.com/catancs/meter">GitHub</a>.
+      </p>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>&copy; 2026 Catalin-Stefan Niculescu</span>
+      <div class="footer-links">
+        <a href="https://github.com/catancs" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.linkedin.com/in/catalin-stefan-niculescu-9aa531197/" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
