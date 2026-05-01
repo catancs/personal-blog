@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spendwall: an agent spending firewall, day two – Catalin-Stefan Niculescu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <nav>
+    <div class="container">
+      <a href="../index.html" class="nav-name">catalin niculescu</a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../projects.html">Projects</a></li>
+        <li><a href="../about.html">About</a></li>
+        <li><a href="../contact.html">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <h1 style="font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 0.5rem;">Spendwall: an agent spending firewall, day two</h1>
+
+    <div class="post-meta">
+      <span>1 May 2026</span>
+      <a href="https://github.com/catancs/spendwall" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+    </div>
+
+    <div class="post-content">
+
+      <p>
+        Two days ago I opened a fresh folder on my Desktop and started writing <strong>Spendwall</strong>. The workspace is up, the daemon runs, the CLI moves it around &mdash; but most of what makes it useful is still ahead of me. I'm writing this post anyway, while it's early, so the second post about it can talk about what actually changed.
+      </p>
+
+      <h2>What it's going to be</h2>
+
+      <p>
+        <a href="meter-tool-for-claude-code.html">Meter</a> tracks one developer's cost on one CLI. Spendwall is the firewall version of the same idea: a local-first daemon that captures, attributes, and gates AI-agent spending across multiple agents and multiple vendors at once. Same intuition (cost awareness changes how you build with these tools), different scale (a team, an org, several agents, OpenAI and Anthropic together, eventually Stripe Link agent wallets too).
+      </p>
+
+      <p>
+        Three jobs, in the order I'll get them done:
+      </p>
+
+      <p>
+        <strong>Observe.</strong> Capture every API call from the agents you run &mdash; Claude Code, Codex, your own Python or TypeScript scripts hitting OpenAI or Anthropic &mdash; and show what each one spent, tagged by whatever axis you care about (agent, customer, project, environment).
+      </p>
+
+      <p>
+        <strong>Cap.</strong> Set a budget per agent, per tag, per rolling window. When it's hit, choose: alert, block, or require approval. There's a 250ms emergency kill switch on the dashboard for when something has visibly gone off the rails.
+      </p>
+
+      <p>
+        <strong>Hand the budget back to the agent.</strong> Through an MCP server, the agent itself can call <code>get_remaining_budget</code> or <code>estimate_cost</code> before it commits to a million-token plan. Cost-aware agents make better decisions than cost-blind ones. That's the architectural bet I most want to test &mdash; almost every cost-control tool I've seen treats the agent as the adversary, but the agent is in the best position to do something about a tight budget if you just let it ask.
+      </p>
+
+      <p>
+        Local-first by default. SQLite for the audit ledger, TOML for human-edited config. Fail-open by default, configurable to fail-closed for compliance customers. No prompt rewriting, no model substitution, no context compression &mdash; the proxy is byte-for-byte transparent. Cloud sync is M3+, a strict superset of the local mode rather than a prerequisite.
+      </p>
+
+      <h2>What stands up today</h2>
+
+      <p>
+        Two days of commits. The honest inventory:
+      </p>
+
+      <p>
+        A Cargo workspace with five foundational crates (<code>core</code>, <code>config</code>, <code>audit</code>, <code>policy</code>, <code>panel</code>) and two binaries (<code>spendwall</code>, <code>spendwall-daemon</code>). The CLI has the subcommands you'd want for a daemon you don't want to think about: <code>init</code> writes default configs without clobbering existing ones, <code>start</code> and <code>stop</code> manage the daemon via PID file, <code>status</code> reports port and PID liveness, <code>doctor</code> emits a Markdown health report, <code>panel</code> opens the dashboard in a browser.
+      </p>
+
+      <p>
+        The daemon itself brings up config, audit, policy, and panel in order, listens on a chosen port, handles SIGINT and SIGTERM cleanly, and supervises its child tasks with a restart-rate cap so a flapping component can't burn CPU. There's an in-process integration harness for tests that spin up the whole daemon end-to-end without leaking ports or PIDs between runs, plus smoke tests against a clean macOS host and a fresh Ubuntu container.
+      </p>
+
+      <p>
+        That's it. The skeleton stands. The muscles haven't been wired up.
+      </p>
+
+      <h2>What's still WIP</h2>
+
+      <p>
+        Roughly the next eight weeks, by the spec:
+      </p>
+
+      <p>
+        <strong>Path B</strong> &mdash; the loopback HTTP proxy that lets you instrument Claude Code or Codex by setting two env vars. This is the wedge that turns Spendwall from a workspace into a useful thing.
+      </p>
+
+      <p>
+        <strong>Path A</strong> &mdash; the Python and TypeScript SDK wrappers for custom agents that import the OpenAI or Anthropic SDK directly.
+      </p>
+
+      <p>
+        <strong>Per-agent rolling-window caps</strong>, the kill switch, and attribution by user-defined tag. The data model and the actor are sketched in the policy crate but nothing acts on them yet.
+      </p>
+
+      <p>
+        <strong>The MCP server.</strong> The interesting bit. Read-only budget tools first; <code>request_preapproval</code> in M2.
+      </p>
+
+      <p>
+        <strong>Stripe webhook integration</strong> for gating Link agent-wallet purchases against policy, with HMAC verification on the receive side.
+      </p>
+
+      <p>
+        <strong>Slack alerts</strong> for cap events, signed-binary distribution via Homebrew tap and <code>curl | sh</code>, and a per-user supervisor (<code>launchd</code> on macOS, <code>systemd --user</code> on Linux) so the daemon survives terminal closes.
+      </p>
+
+      <h2>Why I'm posting now</h2>
+
+      <p>
+        The post-it-when-it-ships pattern means I never write down the early decisions, which are usually the most interesting ones to other engineers. The fact that the architecture is already shaped before any of the actual capture paths exist &mdash; supervisor, audit pipeline, panel, hot-swap config, kill-switch dashmap &mdash; means there are real engineering choices behind the skeleton, even if you can't see them yet from the outside.
+      </p>
+
+      <p>
+        Also: I want a snapshot of what the day-two version of the project felt like, so the day-sixty post has something to compare itself to.
+      </p>
+
+      <p>
+        Repo lives at <a href="https://github.com/catancs/spendwall">github.com/catancs/spendwall</a> &mdash; or will the moment I push it public. I'll come back here with a follow-up the day Path B is forwarding real telemetry.
+      </p>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>&copy; 2026 Catalin-Stefan Niculescu</span>
+      <div class="footer-links">
+        <a href="https://github.com/catancs" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.linkedin.com/in/catalin-stefan-niculescu-9aa531197/" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
