@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvacli: a Canva CLI written for agents, not humans – Catalin-Stefan Niculescu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <nav>
+    <div class="container">
+      <a href="../index.html" class="nav-name">catalin niculescu</a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../projects.html">Projects</a></li>
+        <li><a href="../about.html">About</a></li>
+        <li><a href="../contact.html">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <h1 style="font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 0.5rem;">Canvacli: a Canva CLI written for agents, not humans</h1>
+
+    <div class="post-meta">
+      <span>7 May 2026</span>
+      <a href="https://github.com/catalinlongevai/canvacli" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+    </div>
+
+    <div class="post-content">
+
+      <p>
+        I spent the day shipping <strong>canvacli</strong> &mdash; a command-line tool for the <a href="https://www.canva.dev/docs/connect/">Canva Connect API</a>. It does the obvious things you'd expect from a Canva CLI: log in, list your designs, generate new ones from brand templates, export to PDF or PNG. What's less obvious is who I built it for. Not me at the terminal. The agent in the next pane over.
+      </p>
+
+      <h2>The gap</h2>
+
+      <p>
+        Canva does ship an official CLI &mdash; <code>@canva/cli</code> &mdash; but it's for building <em>Canva Apps</em>: the panels and integrations that show up inside the Canva editor. There's nothing for the other direction: programmatically <em>using</em> Canva from the outside. If I want to ask Claude Code to "generate me twenty social posts from this CSV and export them all as PDFs", there's no tool to hand it. It either calls the REST API directly (verbose, easy to mess up) or it doesn't do it.
+      </p>
+
+      <p>
+        That's the gap. So canvacli sits between the agent and the Connect API and turns "use Canva" into something an agent can actually drive in three or four shell calls.
+      </p>
+
+      <h2>What "agent-first" actually means in practice</h2>
+
+      <p>
+        It's a phrase that gets thrown around. For me it cashed out as a handful of concrete design choices, all of which I'd flip the other way for a human-first CLI.
+      </p>
+
+      <p>
+        <strong>Stable, structured output by default.</strong> When stdout is piped or redirected, every command emits JSON or NDJSON. When stdout is a TTY, output is human-readable. The agent doesn't have to ask for <code>--json</code> &mdash; it gets it because it's piping. A human running <code>canva list</code> in their terminal still gets a pretty table.
+      </p>
+
+      <p>
+        <strong>Errors are structured too.</strong> Every error to stderr is a JSON envelope with an <code>error</code> code, a <code>message</code>, an <code>exit_code</code>, and &mdash; this is the part I care about most &mdash; a <code>fix</code> field containing a literal command the agent can execute to recover.
+      </p>
+
+<pre><code>{
+  "error": "design_not_found",
+  "message": "no design matched 'banner'",
+  "fix": "canva list --json | jq '.[] | select(.title | test(\"banner\"; \"i\"))'",
+  "exit_code": 3
+}</code></pre>
+
+      <p>
+        Agents are good at running commands. They're less good at improvising when something fails. If I tell them what to type next, the recovery loop closes itself.
+      </p>
+
+      <p>
+        <strong>A static schema you can prime the agent with once.</strong> <code>canva schema --full</code> emits a JSON description of every command, every flag, every error code. You drop it into your agent's context once and it can invoke anything in the CLI without ever calling <code>--help</code>. There's a token-budgeted <code>--compact</code> variant for when context is tight.
+      </p>
+
+      <p>
+        <strong>A read-only SQL escape hatch.</strong> Every API response gets cached in a local SQLite database. <code>canva sql "SELECT raw_json FROM designs WHERE id = '...'"</code> lets the agent reach for fields the CLI doesn't surface, without me having to anticipate every column up front. The handle is opened in <code>query_only</code> mode at the engine level so even a clever <code>UPDATE</code> can't slip through. I learned about that the hard way &mdash; setting <code>query_only</code> at the connection level isn't enough; SQLite cheerfully accepts writes that the application layer thinks it's blocked.
+      </p>
+
+      <h2>Why Go</h2>
+
+      <p>
+        I went back and forth between Rust and Go for a couple of hours before starting. Both make sense. Rust gives me the stronger type system and the better cache crates; Go gives me a single static binary, faster compile cycles for a CLI of this size, and a nicer <code>cobra</code> + <code>viper</code> story for the command tree.
+      </p>
+
+      <p>
+        The deciding factor was distribution. <code>brew install</code> needs to Just Work, and <code>goreleaser</code> with a Homebrew tap is a five-minute pipeline. The agent shouldn't have to know about <code>cargo install</code>. The agent shouldn't have to know about anything except <code>brew install catalinlongevai/tap/canvacli</code> followed by <code>canva login</code>.
+      </p>
+
+      <p>
+        I gave up some type safety. I gained an installer that opens its mouth once and is done.
+      </p>
+
+      <h2>OAuth 2.0 PKCE, not API keys</h2>
+
+      <p>
+        Canva Connect doesn't really have a happy path for static API keys outside of partner programs. So <code>canva login</code> runs a proper OAuth 2.0 PKCE flow: it spins up a localhost callback, opens the browser, waits for the redirect, exchanges the code for an access and refresh token, and stores them in the OS keychain (with a config-file fallback for headless environments).
+      </p>
+
+      <p>
+        PKCE means there's no client secret on disk. Tokens get rotated automatically when they hit 90% of their TTL. <code>canva logout</code> wipes both the keychain entry and the SQLite cache so the next user of the machine doesn't inherit anything.
+      </p>
+
+      <h2>Idempotency for create</h2>
+
+      <p>
+        <code>canva create</code> generates a design from a brand template with autofill data. Agents retry. If an agent's network call times out and it retries the create, I don't want two designs in the user's account.
+      </p>
+
+      <p>
+        So the create command takes an optional <code>--idempotency-key</code>. If you don't pass one, canvacli generates a content-hashed key from the template ID plus the autofill JSON and uses that. Two identical creates within the dedup window collapse to one design. The agent doesn't have to think about it.
+      </p>
+
+      <h2>What I deliberately didn't build</h2>
+
+      <p>
+        Plenty. The CLI is intentionally narrow. Some of what's missing:
+      </p>
+
+      <p>
+        <strong>No interactive prompts.</strong> Not a single <code>y/n</code> question. An agent piping into stdin can't answer them, and forgetting <code>--yes</code> is the kind of papercut I want to make impossible. Destructive commands take a flag or they refuse to run.
+      </p>
+
+      <p>
+        <strong>No design editing.</strong> Connect doesn't expose primitives for "move this text box left by 20px." I'm not going to fake it. The CLI does what the API actually supports: list, create-from-template, export, organize.
+      </p>
+
+      <p>
+        <strong>No Canva Apps tooling.</strong> That's <code>@canva/cli</code>'s job. Different audience, different surface, no point in overlapping.
+      </p>
+
+      <h2>The honest part: Enterprise gating</h2>
+
+      <p>
+        Two of the most useful commands &mdash; <code>canva create</code> and <code>canva templates</code> &mdash; rely on Connect endpoints that are gated to <strong>Canva Enterprise</strong> accounts. If you're on a Free, Pro, or Teams plan, those endpoints return 403 no matter what your CLI does. The rest of canvacli (login, whoami, list, export, folders, sql, schema) works on any account.
+      </p>
+
+      <p>
+        I went back and forth on whether to ship <code>create</code> at all given the gating. I decided yes, because the people most likely to want this tool are the ones automating designs at scale &mdash; agencies, marketing teams, in-house generative pipelines &mdash; and those people are usually on Enterprise. The error message when you hit the gate is explicit: it tells you what plan you're on, what plan you'd need, and where to read more.
+      </p>
+
+      <h2>The shape of one day</h2>
+
+      <p>
+        The whole repo went up today. Twenty-something commits, in roughly this order: SQLite cache with the schema migration story sorted out, the read-only SQL handler with the engine-level <code>query_only</code> fix, name-or-ID resolution with cache fallback, the output layer (TTY detection, JSON/NDJSON, error envelope), the cobra skeleton, then the commands one by one (login, logout, whoami, templates, create, list, export, folders, schema, sql), then static schemas with token budgeting, then goreleaser + Homebrew, then the README and the <code>CLAUDE.md</code>.
+      </p>
+
+      <p>
+        Building bottom-up like that &mdash; cache and output before the first user-facing command &mdash; is the trick I keep coming back to. Every command after the third one gets cheaper because the foundations are already there. By the time I got to <code>canva sql</code>, it was a thirty-line handler on top of plumbing I'd already tested twice.
+      </p>
+
+      <h2>Try it</h2>
+
+<pre><code>brew install catalinlongevai/tap/canvacli
+canva login
+canva list --limit 5</code></pre>
+
+      <p>
+        Drop <code>canva schema --full</code> into your agent's context and let it cook. Repo is at <a href="https://github.com/catalinlongevai/canvacli">github.com/catalinlongevai/canvacli</a>; <code>CLAUDE.md</code> in the root is the agent-onboarding brief.
+      </p>
+
+      <p>
+        I'll come back to this one when something actually breaks &mdash; that's usually when the more interesting posts get written.
+      </p>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>&copy; 2026 Catalin-Stefan Niculescu</span>
+      <div class="footer-links">
+        <a href="https://github.com/catancs" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.linkedin.com/in/catalin-stefan-niculescu-9aa531197/" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
