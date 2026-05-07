@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spendwall: an agent spending firewall, day two – Catalin-Stefan Niculescu</title>
+  <title>Spendwall: an agent spending firewall, week one – Catalin-Stefan Niculescu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -27,105 +27,109 @@
 
     <a href="../index.html" class="post-back">&larr; Back to home</a>
 
-    <h1 style="font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 0.5rem;">Spendwall: an agent spending firewall, day two</h1>
+    <h1 style="font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 0.5rem;">Spendwall: an agent spending firewall, week one</h1>
 
     <div class="post-meta">
-      <span>1 May 2026</span>
+      <span>7 May 2026</span>
       <a href="https://github.com/catancs/spendwall" target="_blank" rel="noopener">View on GitHub &rarr;</a>
     </div>
 
     <div class="post-content">
 
       <p>
-        Two days ago I opened a fresh folder on my Desktop and started writing <strong>Spendwall</strong>. The workspace is up, the daemon runs, the CLI moves it around &mdash; but most of what makes it useful is still ahead of me. I'm writing this post anyway, while it's early, so the second post about it can talk about what actually changed.
-      </p>
-
-      <h2>What it's going to be</h2>
-
-      <p>
-        <a href="meter-tool-for-claude-code.html">Meter</a> tracks one developer's cost on one CLI. Spendwall is the firewall version of the same idea: a local-first daemon that captures, attributes, and gates AI-agent spending across multiple agents and multiple vendors at once. Same intuition (cost awareness changes how you build with these tools), different scale (a team, an org, several agents, OpenAI and Anthropic together, eventually Stripe Link agent wallets too).
+        A week ago I posted a "day two" snapshot of <strong>Spendwall</strong>. The honest summary then was: <em>"the skeleton stands. The muscles haven't been wired up."</em> Workspace, daemon, CLI, audit pipeline &mdash; all there, but nothing was actually <em>capturing</em> spend yet, nothing was <em>gating</em> it, and the agent had no way to <em>ask</em> about the budget. Path A, Path B, the kill switch, the MCP server: all WIP.
       </p>
 
       <p>
-        Three jobs, in the order I'll get them done:
+        Six days and 200-odd commits later, almost all of it is wired. This is the follow-up I promised &mdash; the one I said I'd write the day Path B was forwarding real telemetry. That day was Monday.
+      </p>
+
+      <h2>What's actually working</h2>
+
+      <p>
+        <strong>Path B &mdash; the loopback proxy.</strong> You set <code>OPENAI_BASE_URL</code> and <code>ANTHROPIC_BASE_URL</code> to the local proxy and Spendwall is now in front of every API call. <code>/v1/messages</code> for Anthropic, <code>/v1/chat/completions</code>, <code>/v1/responses</code>, and <code>/v1/completions</code> for OpenAI. Forwarded byte-for-byte to upstream, audited on the way back, broadcast as <code>SpendObserved</code> events to anything subscribed to the panel websocket. Blocked calls return a real <code>402 PAYMENT_REQUIRED</code> with a structured error body, which feels like the most HTTP-honest thing the proxy can do when policy says no.
       </p>
 
       <p>
-        <strong>Observe.</strong> Capture every API call from the agents you run &mdash; Claude Code, Codex, your own Python or TypeScript scripts hitting OpenAI or Anthropic &mdash; and show what each one spent, tagged by whatever axis you care about (agent, customer, project, environment).
+        <strong>Path A &mdash; Python and TypeScript SDKs.</strong> Both ship as importable wrappers. In Python, <code>spendwall.openai.wrap(client)</code> patches <code>chat.completions</code> and <code>responses</code> in place; <code>spendwall.anthropic.wrap(client)</code> patches <code>messages.create</code>. In TypeScript, <code>createSpendwallOpenAI()</code> and <code>createSpendwallAnthropic()</code> return drop-in clients. Both SDKs talk to the daemon over a Unix domain socket with 0600 perms &mdash; faster than loopback HTTP and lets the daemon trust the caller via filesystem ownership rather than an additional auth layer.
       </p>
 
       <p>
-        <strong>Cap.</strong> Set a budget per agent, per tag, per rolling window. When it's hit, choose: alert, block, or require approval. There's a 250ms emergency kill switch on the dashboard for when something has visibly gone off the rails.
+        Both SDKs default to <strong>fail-open</strong>. If the daemon is down, the API call still goes through; you just don't get policy enforcement. That's the right default for "I added Spendwall to my agent" not to mean "my agent stopped working." There's a per-call <code>mode="strict"</code> override and an env-var override for compliance customers who'd rather fail-closed.
       </p>
 
       <p>
-        <strong>Hand the budget back to the agent.</strong> Through an MCP server, the agent itself can call <code>get_remaining_budget</code> or <code>estimate_cost</code> before it commits to a million-token plan. Cost-aware agents make better decisions than cost-blind ones. That's the architectural bet I most want to test &mdash; almost every cost-control tool I've seen treats the agent as the adversary, but the agent is in the best position to do something about a tight budget if you just let it ask.
+        <strong>The kill switch.</strong> Per-agent and global. The integration test that asserts a kill-switch flip cancels in-flight upstream calls within 250ms passes consistently. Mid-stream kills are handled too &mdash; if you hit the kill while an SSE response is streaming back, the proxy aborts the upstream connection and writes a partial-cost audit row using whatever usage tokens it had already parsed off the side channel. Same path handles client disconnects.
       </p>
 
       <p>
-        Local-first by default. SQLite for the audit ledger, TOML for human-edited config. Fail-open by default, configurable to fail-closed for compliance customers. No prompt rewriting, no model substitution, no context compression &mdash; the proxy is byte-for-byte transparent. Cloud sync is M3+, a strict superset of the local mode rather than a prerequisite.
-      </p>
-
-      <h2>What stands up today</h2>
-
-      <p>
-        Two days of commits. The honest inventory:
+        <strong>Approval flow.</strong> When a policy decision is "approval required", the proxy doesn't 4xx and walk away &mdash; it holds the request open, inserts a row into the <code>approvals</code> table, broadcasts a websocket event so the panel pings, and polls the row until you grant, deny, or it times out. Holding the request rather than streaming the approval back means it works with any HTTP client unchanged. There's a background expirer that clears stale pending approvals, and panel endpoints (<code>GET /api/approvals</code>, <code>POST /api/approvals/:id/resolve</code>) for the dashboard.
       </p>
 
       <p>
-        A Cargo workspace with five foundational crates (<code>core</code>, <code>config</code>, <code>audit</code>, <code>policy</code>, <code>panel</code>) and two binaries (<code>spendwall</code>, <code>spendwall-daemon</code>). The CLI has the subcommands you'd want for a daemon you don't want to think about: <code>init</code> writes default configs without clobbering existing ones, <code>start</code> and <code>stop</code> manage the daemon via PID file, <code>status</code> reports port and PID liveness, <code>doctor</code> emits a Markdown health report, <code>panel</code> opens the dashboard in a browser.
+        <strong>The MCP server.</strong> This is the one I wrote about most enthusiastically last week, the architectural bet I most wanted to test. It's running. <code>spendwall-mcp</code> is an <a href="https://github.com/modelcontextprotocol/rust-sdk">rmcp</a> stdio server that exposes <code>get_remaining_budget</code> and <code>estimate_cost</code> as MCP tools, backed by a UDS read-only projection from the daemon (<code>/v1/policy/snapshot</code>). The agent &mdash; Claude Code, Codex, whatever &mdash; can now call <code>get_remaining_budget</code> before it commits to a million-token plan. Cost-aware agents really do make different decisions than cost-blind ones; I've watched this happen in my own sessions for the past three days.
       </p>
 
       <p>
-        The daemon itself brings up config, audit, policy, and panel in order, listens on a chosen port, handles SIGINT and SIGTERM cleanly, and supervises its child tasks with a restart-rate cap so a flapping component can't burn CPU. There's an in-process integration harness for tests that spin up the whole daemon end-to-end without leaking ports or PIDs between runs, plus smoke tests against a clean macOS host and a fresh Ubuntu container.
+        <strong>Slack and email alerts.</strong> Two transports behind a common <code>Transport</code> trait, dispatched through <code>AlertDispatcher</code> with capped exponential backoff and a SQLite dead-letter table for messages that exhaust their retry budget. The proxy emits <code>CapBlocked</code>, <code>ApprovalRequested</code>, and <code>CapAlert</code> events; the dispatcher fans them out. Email goes through <code>lettre</code> with STARTTLS; Slack is HTTP webhooks with a careful retryable-vs-permanent error mapping (the kind of thing where 408 belongs in the retryable bucket and 401 doesn't, and you only learn that by getting it wrong once).
       </p>
 
       <p>
-        That's it. The skeleton stands. The muscles haven't been wired up.
+        <strong>Stripe webhook ingestion and reconciliation.</strong> HMAC-SHA256 signature verification, a replay window with saturating arithmetic (a negative window almost slipped through &mdash; tests caught it), and a <code>StripeReconciler</code> that matches invoice line items back to <code>spend_events</code> rows. The day Anthropic or OpenAI invoices arrive, the daemon reconciles the local audit ledger against what was actually billed and flags drift.
+      </p>
+
+      <p>
+        <strong>Pre-flight cost estimation.</strong> Tokenizer-based, with a per-provider story. OpenAI uses <code>tiktoken-rs</code> with lazy-cached encoders &mdash; entirely local, microseconds per call. Anthropic doesn't have a local tokenizer, so the proxy makes a <code>/v1/messages/count_tokens</code> call against the upstream API with a 50ms timeout. If it times out, it falls back to a byte-based estimate. That fallback path is the kind of thing I'd normally over-engineer; here I just want the proxy to not become the bottleneck.
+      </p>
+
+      <p>
+        <strong>Hot-reload everything.</strong> <code>caps.toml</code>, <code>pricing.toml</code>, <code>alerts.toml</code> &mdash; all watched on disk via a debounced file watcher, all hot-swapped through <code>ArcSwap</code> handles with last-good-wins semantics. Edit a cap, save, the daemon picks it up without a restart. If you save garbage, the daemon keeps running on the last good config and logs the parse error.
+      </p>
+
+      <p>
+        <strong>Distribution.</strong> <code>cargo-dist</code> for the Rust binaries, <code>npm</code> for the TypeScript SDK, <code>pypi</code> for the Python SDK, Homebrew tap for the daemon. Tagged releases trigger the whole pipeline. There's a fail-loud guard on the release workflow so an unmapped tag suffix can't silently produce empty packages.
+      </p>
+
+      <p>
+        <strong>The panel.</strong> A Vite + React UI embedded into the daemon binary via <code>rust-embed</code>. Auth-check against a tri-state endpoint, live <code>/api/events</code> websocket for spend events and approval requests, kill-switch button that hits <code>/api/kill_switch</code>. It's a skeleton compared to where it'll need to be at GA, but for a build-in-public alpha, the bones are honest.
+      </p>
+
+      <h2>Things that hardened in week one</h2>
+
+      <p>
+        The architectural bet from last week's post &mdash; <em>let the agent ask about the budget</em> &mdash; held up. The MCP server is the smallest, simplest crate in the workspace, and the most useful part of the system from where I'm sitting. Two read-only tools and a UDS-backed snapshot client. That's it. Cost-aware agents really do scope their plans differently when they can ask; I no longer think this is a hopeful claim.
+      </p>
+
+      <p>
+        The fail-open default, on the other hand, took longer to feel right than I expected. Every instinct says compliance-shaped tools should fail closed. But for the audience that adopts this first &mdash; solo devs and small teams putting it in front of their agents &mdash; fail-closed means "your agent stops working when my daemon crashes," which is a worse outcome than missed enforcement. Strict mode is one env var away. That asymmetry felt wrong for a day and now feels obviously correct.
+      </p>
+
+      <p>
+        The proxy being byte-for-byte transparent is the constraint that keeps paying off. No prompt rewriting. No model substitution. No context compression. The only thing the proxy does to the response is parse usage tokens off a side channel for streaming responses, and even that is non-mutating. Every time I've been tempted to "just add" a small mutation, I've talked myself out of it within a day. The class of bugs that opens up is enormous and the upside is small.
       </p>
 
       <h2>What's still WIP</h2>
 
       <p>
-        Roughly the next eight weeks, by the spec:
+        The release pipeline ships binaries but the signed-binary distribution and the Gatekeeper notarization on macOS are still not done; first-run on a fresh Mac currently requires the right-click-Open dance. <code>launchd</code> on macOS and <code>systemd --user</code> on Linux supervisor units are written but not yet installed by <code>spendwall init</code>. Cloud sync is M3 work and hasn't started, by design &mdash; local-first means local-first works first. And the panel needs real charts; the current "show me the last hour by tag" view is a list, not a graph.
       </p>
 
       <p>
-        <strong>Path B</strong> &mdash; the loopback HTTP proxy that lets you instrument Claude Code or Codex by setting two env vars. This is the wedge that turns Spendwall from a workspace into a useful thing.
+        On the agent-side ergonomics, the next thing I want is <code>request_preapproval</code> as a third MCP tool. Right now an agent that's about to do something expensive can ask <em>how much budget</em> it has, but it can't proactively reserve it. That belongs in M2.
+      </p>
+
+      <h2>Why the snapshot mattered</h2>
+
+      <p>
+        The whole reason I wrote a day-two post about a project that did almost nothing yet was so that this post would have something to compare itself to. That worked. Reading the day-two post a week later, the honest things hit hardest: the inventory of WIP at the end, the bit about the muscles not being wired up. None of that aged badly. The skeleton I described <em>was</em> the skeleton, and the muscles got wired in roughly the order I expected.
       </p>
 
       <p>
-        <strong>Path A</strong> &mdash; the Python and TypeScript SDK wrappers for custom agents that import the OpenAI or Anthropic SDK directly.
+        The next post will be when something genuinely surprises me &mdash; either a compliance customer asks for something I haven't designed for, or someone uses the MCP tools in a way I didn't anticipate, or the proxy hits a class of upstream behavior I didn't plan for. That post is more interesting to write than this one. This one is just bookkeeping.
       </p>
 
       <p>
-        <strong>Per-agent rolling-window caps</strong>, the kill switch, and attribution by user-defined tag. The data model and the actor are sketched in the policy crate but nothing acts on them yet.
-      </p>
-
-      <p>
-        <strong>The MCP server.</strong> The interesting bit. Read-only budget tools first; <code>request_preapproval</code> in M2.
-      </p>
-
-      <p>
-        <strong>Stripe webhook integration</strong> for gating Link agent-wallet purchases against policy, with HMAC verification on the receive side.
-      </p>
-
-      <p>
-        <strong>Slack alerts</strong> for cap events, signed-binary distribution via Homebrew tap and <code>curl | sh</code>, and a per-user supervisor (<code>launchd</code> on macOS, <code>systemd --user</code> on Linux) so the daemon survives terminal closes.
-      </p>
-
-      <h2>Why I'm posting now</h2>
-
-      <p>
-        The post-it-when-it-ships pattern means I never write down the early decisions, which are usually the most interesting ones to other engineers. The fact that the architecture is already shaped before any of the actual capture paths exist &mdash; supervisor, audit pipeline, panel, hot-swap config, kill-switch dashmap &mdash; means there are real engineering choices behind the skeleton, even if you can't see them yet from the outside.
-      </p>
-
-      <p>
-        Also: I want a snapshot of what the day-two version of the project felt like, so the day-sixty post has something to compare itself to.
-      </p>
-
-      <p>
-        Repo lives at <a href="https://github.com/catancs/spendwall">github.com/catancs/spendwall</a> &mdash; or will the moment I push it public. I'll come back here with a follow-up the day Path B is forwarding real telemetry.
+        Repo is at <a href="https://github.com/catancs/spendwall">github.com/catancs/spendwall</a>. <code>brew install catancs/tap/spendwall</code>, <code>spendwall init</code>, <code>spendwall start</code>, <code>spendwall panel</code> &mdash; that's the whole onboarding for the local mode. SDKs are <code>pip install spendwall</code> and <code>npm install spendwall</code>.
       </p>
 
     </div>
