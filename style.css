@@ -235,9 +235,13 @@ section {
   font-weight: 600;
   font-size: 0.95rem;
   transition: color 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border);
+}
+
+.post-item:hover .post-title {
+  text-decoration-color: var(--accent);
 }
 
 /* === Find me on === */
@@ -581,32 +585,6 @@ section {
   color: var(--text-muted);
   font-size: 1rem;
   opacity: 0.55;
-}
-
-/* === Post icons (homepage Latest Posts) === */
-.post-title-text {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-color: var(--border);
-  transition: text-decoration-color 0.2s;
-}
-
-.post-item:hover .post-title-text {
-  text-decoration-color: var(--accent);
-}
-
-.post-icon {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  color: var(--text-muted);
-  opacity: 0.85;
-  transition: color 0.2s, opacity 0.2s;
-}
-
-.post-item:hover .post-icon {
-  color: var(--accent);
-  opacity: 1;
 }
 
 /* === Reading === */
