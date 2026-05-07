@@ -42,11 +42,11 @@
             </a>
           </div>
           <div class="timeline-desc">
-            Agent-first CLI for the Canva Connect API. Stable JSON/NDJSON output, structured errors with literal <code>fix</code> commands, OAuth 2.0 PKCE login, and a local SQLite cache with a read-only SQL escape hatch. Designed so AI coding agents can drive it without ever reading <code>--help</code>.
+            Agent-first CLI for the Canva Connect API. Stable JSON/NDJSON output, structured errors with literal <code>fix</code> commands, OAuth 2.0 PKCE login with embedded credentials, a native MCP server (<code>canva mcp serve</code>), and a local SQLite cache with FTS5 search and a read-only SQL escape hatch. <code>canva sync</code> mirrors your account; the agent can then list, create, export, resize, search, upload assets, and manage comments &mdash; all without ever reading <code>--help</code>. v2.0.
           </div>
           <div class="timeline-tags">
             <span class="timeline-tag">Go</span>
-            <span class="timeline-tag">CLI</span>
+            <span class="timeline-tag">CLI + MCP</span>
             <span class="timeline-tag">Canva API</span>
           </div>
         </div>
@@ -60,7 +60,7 @@
             </a>
           </div>
           <div class="timeline-desc">
-            Local-first agent spending firewall and observability tool. Captures, attributes, and gates AI-agent spending across multiple agents and vendors via a transparent loopback proxy plus Python/TypeScript SDKs. Per-agent kill switch, hold-and-poll approvals, Slack and email alerts, Stripe webhook reconciliation, and an MCP server that lets the agent itself ask about its remaining budget. Build-in-public; M1 alpha.
+            Local-first agent spending firewall and observability tool. Captures, attributes, and gates AI-agent spending across multiple agents and vendors via a transparent loopback proxy plus Python/TypeScript SDKs. Per-app attribution via UDS peer credentials, per-agent kill switch, hold-and-poll approvals, mid-flight 80% cap warnings, Slack/email alerts, Stripe webhook reconciliation, configurable fail-closed mode, and an MCP server that lets the agent itself ask about its remaining budget. v0.0.9 ships M1 plus M2 visibility.
           </div>
           <div class="timeline-tags">
             <span class="timeline-tag">Rust</span>

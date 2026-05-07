@@ -230,6 +230,74 @@
         </p>
       </div>
 
+      <div class="post-week-separator"><span>&middot; &middot; &middot;</span></div>
+
+      <div class="post-week">
+        <div class="post-week-label">Evening &middot; 7 May 2026</div>
+
+        <p>
+          Two things happened between the Week 2 post above and dinner: M1 closed out, and most of M2's visibility work landed. Cut a release as v0.0.9.
+        </p>
+
+        <h2>M1 closeout</h2>
+
+        <p>
+          The release pipeline that was "ships binaries" by the morning's post now actually ships them. The npm provenance attestation was wrong &mdash; sigstore couldn't verify the package, so <code>npm install spendwall</code> failed for anyone who'd opted into <code>--require-provenance</code>. The Homebrew formula was landing in the tap repo's root rather than <code>Formula/</code>, so <code>brew install</code> didn't see it until I went looking. There was a saturating-arithmetic bug in the Stripe replay-window check that let a negative window slip through under specific clock skew; it's caught by tests now and the math is saturating at the boundary.
+        </p>
+
+        <p>
+          The Windows MSVC target got dropped from the release matrix &mdash; the supervisor-unit story (<code>launchd</code> on macOS, <code>systemd --user</code> on Linux) doesn't have a Windows equivalent I'm willing to ship yet, so distributing a binary nobody can run-as-a-service feels like worse-than-not-shipping. <code>cargo-deny</code> moved to running on the host rather than in a target-specific container, and the wildcard-version rule got softened so a transitive crate I don't control can't fail the release.
+        </p>
+
+        <p>
+          That's the dull part. Now the interesting part.
+        </p>
+
+        <h2>M2: per-app caps via UDS peer credentials</h2>
+
+        <p>
+          The thing I most wanted to do in M2. When an SDK call comes in over the Unix domain socket, Spendwall now captures peer credentials at <code>accept</code> time &mdash; PID, UID, executable path, derived app name. Each is attached as a request extension and persisted on every <code>spend_events</code> row alongside the existing <code>agent_id</code>. Caps can now scope by <em>which application is making the call</em>, not just by the <code>agent_id</code> the caller chose to send.
+        </p>
+
+        <p>
+          This matters because <code>agent_id</code> is self-reported. A misconfigured agent can claim to be anything; a compromised one definitely will. <code>peer_exe</code> can't lie &mdash; it's the actual binary the kernel sees on the other end of the socket. So you get a real ground-truth axis for attribution. The CLI surfaces it: <code>spendwall ls --by app|agent --since 1h|1d|7d|30d</code> shows actual spend per real binary. The panel groups by app instead of by self-declared agent.
+        </p>
+
+        <p>
+          <strong>Curated peer-label table.</strong> Raw paths look bad in a UI. <code>~/.spendwall/labels.toml</code> ships seeded with mappings for the common LLM CLIs (<code>claude</code>, <code>codex</code>, <code>cursor</code>) and the obvious tool runners, so the panel shows "Claude Code" instead of <code>/Users/cata/.local/bin/claude</code>. Users extend it for their own binaries. The seed is deliberately conservative &mdash; if I'm not sure what something is, I'd rather show the path than guess wrong.
+        </p>
+
+        <h2>Tag redaction, mid-flight warnings, fail-closed</h2>
+
+        <p>
+          <strong>Tag-value redaction.</strong> At the on-disk persistence boundary, configured tag values get redacted before they ever land in the audit ledger. The kind of thing compliance customers ask for in the first meeting &mdash; "what if my agent stuffs the customer email into the request body and we end up with an audit row containing PII?" Now the redactor runs between the proxy's audit-emit helper and the SQLite writer.
+        </p>
+
+        <p>
+          <strong>Mid-flight 80% cap warnings.</strong> Parallel signal alongside hard enforcement. The proxy emits a <code>CapAlert</code> when an in-flight call would push usage past 80% of the cap; alerts route through the Slack/email pipeline that landed in week one. Catches cap creep before it becomes cap hit, which is what you actually want for the soft side of the budget conversation &mdash; you don't want every cap to feel like a wall, you want the wall to be the last warning, not the only one.
+        </p>
+
+        <p>
+          <strong>Fail-closed-on-policy-unavailable.</strong> The fail-open default I argued for in week two stays. But there's now a config flag &mdash; <code>policy.fail_mode = "closed"</code> &mdash; that flips the behavior at the daemon level for compliance customers who explicitly want the opposite. Strict mode at the SDK edge plus fail-closed at the engine. The two overrides compose: strict callers get hard refusals when the engine is unavailable, lax callers fail-open or fail-closed depending on the daemon-level switch.
+        </p>
+
+        <h2>Health and doctor</h2>
+
+        <p>
+          A <code>/v1/health</code> endpoint over UDS that probes the policy engine specifically (alive, but is the cap evaluator responsive?), and <code>spendwall doctor</code> calls it on top of the existing port + PID + UDS checks. The doctor report finally tells you the daemon is <em>actually</em> serving rather than just running. The number of times I've watched a process appear healthy via <code>ps</code> while the engine inside it was deadlocked is not zero.
+        </p>
+
+        <h2>Where this leaves things</h2>
+
+        <p>
+          v0.0.9 ships the M2 work I cared most about. Cloud sync &mdash; the M3 milestone &mdash; hasn't started, and won't until the build-in-public alpha has run for long enough to know what the cloud half should actually do. As far as the local tool goes: feature-complete for the use cases I had in mind. Per-app attribution, per-app caps, tag redaction, mid-flight warnings, configurable fail mode, real health reporting, signed-and-published-and-installable.
+        </p>
+
+        <p>
+          The next post is when somebody hits a class of problem I hadn't designed for.
+        </p>
+      </div>
+
     </div>
 
   </main>
