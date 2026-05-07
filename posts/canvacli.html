@@ -31,7 +31,7 @@
 
     <div class="post-meta">
       <span>7 May 2026</span>
-      <a href="https://github.com/catalinlongevai/canvacli" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+      <a href="https://github.com/catancs/canvacli" target="_blank" rel="noopener">View on GitHub &rarr;</a>
     </div>
 
     <div class="post-content">
@@ -90,7 +90,7 @@
       </p>
 
       <p>
-        The deciding factor was distribution. <code>brew install</code> needs to Just Work, and <code>goreleaser</code> with a Homebrew tap is a five-minute pipeline. The agent shouldn't have to know about <code>cargo install</code>. The agent shouldn't have to know about anything except <code>brew install catalinlongevai/tap/canvacli</code> followed by <code>canva login</code>.
+        The deciding factor was distribution. <code>brew install</code> needs to Just Work, and <code>goreleaser</code> with a Homebrew tap is a five-minute pipeline. The agent shouldn't have to know about <code>cargo install</code>. The agent shouldn't have to know about anything except <code>brew install catancs/tap/canvacli</code> followed by <code>canva login</code>.
       </p>
 
       <p>
@@ -135,14 +135,10 @@
         <strong>No Canva Apps tooling.</strong> That's <code>@canva/cli</code>'s job. Different audience, different surface, no point in overlapping.
       </p>
 
-      <h2>The honest part: Enterprise gating</h2>
+      <h2>Enterprise gating (WIP)</h2>
 
       <p>
-        Two of the most useful commands &mdash; <code>canva create</code> and <code>canva templates</code> &mdash; rely on Connect endpoints that are gated to <strong>Canva Enterprise</strong> accounts. If you're on a Free, Pro, or Teams plan, those endpoints return 403 no matter what your CLI does. The rest of canvacli (login, whoami, list, export, folders, sql, schema) works on any account.
-      </p>
-
-      <p>
-        I went back and forth on whether to ship <code>create</code> at all given the gating. I decided yes, because the people most likely to want this tool are the ones automating designs at scale &mdash; agencies, marketing teams, in-house generative pipelines &mdash; and those people are usually on Enterprise. The error message when you hit the gate is explicit: it tells you what plan you're on, what plan you'd need, and where to read more.
+        A few canvacli commands &mdash; <code>canva create</code> and <code>canva templates</code> &mdash; depend on Connect endpoints that Canva gates to Enterprise accounts. What I'm building next is a cleaner story around that: detect the plan tier on login, mark gated commands explicitly in the schema, and surface a structured error before the network call instead of a generic 403 from upstream.
       </p>
 
       <h2>The shape of one day</h2>
@@ -157,12 +153,12 @@
 
       <h2>Try it</h2>
 
-<pre><code>brew install catalinlongevai/tap/canvacli
+<pre><code>brew install catancs/tap/canvacli
 canva login
 canva list --limit 5</code></pre>
 
       <p>
-        Drop <code>canva schema --full</code> into your agent's context and let it cook. Repo is at <a href="https://github.com/catalinlongevai/canvacli">github.com/catalinlongevai/canvacli</a>; <code>CLAUDE.md</code> in the root is the agent-onboarding brief.
+        Drop <code>canva schema --full</code> into your agent's context and let it cook. Repo is at <a href="https://github.com/catancs/canvacli">github.com/catancs/canvacli</a>; <code>CLAUDE.md</code> in the root is the agent-onboarding brief.
       </p>
 
       <p>
