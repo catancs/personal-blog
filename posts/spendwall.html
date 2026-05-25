@@ -143,6 +143,66 @@
 
         <h2>What's actually working</h2>
 
+        <figure class="post-diagram">
+          <svg viewBox="0 0 620 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hub-and-spoke architecture: the Spendwall daemon at center with four interfaces - MCP server, Panel, Path B HTTP proxy, and Path A SDK wrappers">
+            <defs>
+              <marker id="sw-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#4F7C82"/>
+              </marker>
+              <marker id="sw-arr-start" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M10,0 L0,5 L10,10 z" fill="#4F7C82"/>
+              </marker>
+            </defs>
+
+            <!-- North: MCP server -->
+            <rect x="215" y="20" width="190" height="80" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+            <text x="310" y="44" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">MCP server</text>
+            <text x="310" y="63" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">get_remaining_budget</text>
+            <text x="310" y="79" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">estimate_cost</text>
+            <text x="408" y="65" font-family="'JetBrains Mono', monospace" font-size="9" fill="#4F7C82" font-style="italic">stdio</text>
+
+            <!-- North arrow: MCP <-> daemon (bidirectional) -->
+            <line x1="310" y1="102" x2="310" y2="188" stroke="#4F7C82" stroke-width="1.5" marker-start="url(#sw-arr-start)" marker-end="url(#sw-arr)"/>
+
+            <!-- West: Path A SDK wrappers -->
+            <rect x="20" y="190" width="170" height="80" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+            <text x="105" y="214" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Path A &middot; SDKs</text>
+            <text x="105" y="233" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">spendwall.openai.wrap()</text>
+            <text x="105" y="249" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">createSpendwallAnthropic()</text>
+            <text x="105" y="266" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="9" fill="#4F7C82" font-style="italic">UDS (0600)</text>
+
+            <!-- West arrow -->
+            <line x1="192" y1="230" x2="238" y2="230" stroke="#4F7C82" stroke-width="1.5" marker-start="url(#sw-arr-start)" marker-end="url(#sw-arr)"/>
+
+            <!-- Center: daemon (hub, accent-soft fill) -->
+            <rect x="240" y="190" width="140" height="80" rx="6" fill="rgba(79, 124, 130, 0.10)" stroke="#4F7C82" stroke-width="1.5"/>
+            <text x="310" y="218" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Spendwall daemon</text>
+            <text x="310" y="238" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">policy &middot; audit &middot; caps</text>
+            <text x="310" y="255" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">SQLite ledger</text>
+
+            <!-- East arrow -->
+            <line x1="382" y1="230" x2="428" y2="230" stroke="#4F7C82" stroke-width="1.5" marker-start="url(#sw-arr-start)" marker-end="url(#sw-arr)"/>
+
+            <!-- East: Panel -->
+            <rect x="430" y="190" width="170" height="80" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+            <text x="515" y="214" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Panel</text>
+            <text x="515" y="233" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">live events stream</text>
+            <text x="515" y="249" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">kill switch &middot; approvals</text>
+            <text x="515" y="266" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="9" fill="#4F7C82" font-style="italic">websocket</text>
+
+            <!-- South arrow: daemon <-> Path B -->
+            <line x1="310" y1="272" x2="310" y2="358" stroke="#4F7C82" stroke-width="1.5" marker-start="url(#sw-arr-start)" marker-end="url(#sw-arr)"/>
+
+            <!-- South: Path B loopback proxy -->
+            <rect x="215" y="360" width="190" height="80" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+            <text x="310" y="384" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Path B &middot; loopback proxy</text>
+            <text x="310" y="403" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">OPENAI_BASE_URL</text>
+            <text x="310" y="419" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">ANTHROPIC_BASE_URL</text>
+            <text x="408" y="430" font-family="'JetBrains Mono', monospace" font-size="9" fill="#4F7C82" font-style="italic">HTTP</text>
+          </svg>
+          <figcaption class="post-diagram-caption">One policy engine, four interfaces &mdash; the MCP spoke is the one most cost-control tools don't ship.</figcaption>
+        </figure>
+
         <p>
           <strong>Path B &mdash; the loopback proxy.</strong> Set <code>OPENAI_BASE_URL</code> and <code>ANTHROPIC_BASE_URL</code> at the local proxy and Spendwall is in front of every API call. <code>/v1/messages</code> for Anthropic, <code>/v1/chat/completions</code>, <code>/v1/responses</code>, and <code>/v1/completions</code> for OpenAI. Forwarded byte-for-byte to upstream, audited on the way back, broadcast as <code>SpendObserved</code> events to anything subscribed to the panel websocket. Blocked calls return a real <code>402 PAYMENT_REQUIRED</code> with a structured error body, which feels like the most HTTP-honest thing the proxy can do when policy says no.
         </p>
