@@ -548,6 +548,31 @@ section {
   opacity: 1;
 }
 
+/* === Post diagrams === */
+.post-diagram {
+  margin: 1.8rem 0 0.4rem;
+  display: block;
+}
+
+.post-diagram svg {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.post-diagram-caption {
+  text-align: center;
+  font-size: 0.74rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  margin: 0.4rem auto 1.8rem;
+  max-width: 500px;
+  line-height: 1.55;
+}
+
 /* === Post weekly sections (multi-update posts) === */
 .post-week-label {
   display: inline-block;

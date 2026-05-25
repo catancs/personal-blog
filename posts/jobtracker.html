@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobTracker: a job hunt dashboard built in an evening – Catalin-Stefan Niculescu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <nav>
+    <div class="container">
+      <a href="../index.html" class="nav-name">catalin niculescu</a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../projects.html">Projects</a></li>
+        <li><a href="../about.html">About</a></li>
+        <li><a href="../contact.html">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <h1 style="font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 0.5rem;">JobTracker: a job hunt dashboard built in an evening</h1>
+
+    <div class="post-meta">
+      <span>4 March 2026 &middot; updated 15 March 2026</span>
+      <a href="https://github.com/catancs/job-application-dashboard" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+    </div>
+
+    <div class="post-content">
+
+      <div class="post-week">
+        <div class="post-week-label">Day 1 &middot; 4 March 2026</div>
+
+        <p>
+          My girlfriend has spent the last few weeks trying to land an entry-level legal role in the Netherlands &mdash; junior counsel, compliance internship, legal trainee, the same handful of titles in slightly different combinations. The actual search part isn't the hard bit. The hard bit is tracking forty-something postings across LinkedIn, Indeed, and Glassdoor in a spreadsheet she keeps rewriting. So this evening I sat down to build her something better.
+        </p>
+
+        <p>
+          The shape of it is one I've reached for a few times before: FastAPI on the backend talking to Mongo, a React + Vite + Tailwind frontend with shadcn primitives and React Query for state, a Kanban view backing a triage inbox. The point of writing this post isn't the stack &mdash; it's the choices that are specific to the problem she's actually solving.
+        </p>
+
+        <h2>The core UX</h2>
+
+        <p>
+          What she actually needs is a fast triage loop. Open the app, see new postings, decide quickly whether each one is worth applying to, move on. So the inbox is split-pane (30/70 &mdash; posting list on the left, detail on the right) and keyboard-driven: <code>X</code> rejects the current job and auto-advances, <code>S</code> shortlists it, <code>A</code> marks it as applied, <code>J</code>/<code>K</code> navigate up and down without taking your hand off the keyboard. The Kanban view is drag-and-drop via <code>@dnd-kit</code> &mdash; <code>DndContext</code> with sortable cards, droppable columns, a drag overlay for visual feedback, and a status update fired on drop.
+        </p>
+
+        <p>
+          Auto-advance after action is the single change that turned the inbox from "a thing you scroll" into "a thing you triage." Without it, every <code>X</code> requires a click-or-arrow before the next decision. With it, you can clear forty postings in three minutes.
+        </p>
+
+        <h2>Stitching the deployment together</h2>
+
+        <p>
+          This is where the evening got long. The thing was supposed to live on Koyeb's hobby tier, which means a strict memory quota that doesn't accommodate two separate services for the frontend and the backend. So the deploy story converged on a single container: the React build runs in a <code>oven/bun:1-slim</code> stage, the output gets copied into <code>/app/static</code>, and FastAPI serves both the API and the SPA &mdash; <code>StaticFiles</code> mounted at <code>/assets</code> and a catch-all <code>GET /{full_path:path}</code> route returning <code>index.html</code> for everything else.
+        </p>
+
+        <p>
+          The papercuts I worked through in order:
+        </p>
+
+        <p>
+          <strong>React Router build errors.</strong> The layout <code>Route</code> in <code>App.tsx</code> needed an explicit <code>path="/*"</code> to act as the catch-all parent, and <code>NotFound.tsx</code> had a duplicate export. Two-line fix, twenty minutes to find.
+        </p>
+
+        <p>
+          <strong><code>VITE_API_BASE_URL</code> baked at the wrong time.</strong> Vite inlines env vars at build time, not runtime, so passing <code>--env</code> to the running container does nothing. The fix is <code>ARG VITE_API_BASE_URL=...</code> in the frontend Dockerfile so the build sees the right value when it bundles. The kind of gotcha that's obvious in retrospect and absolutely not obvious the first time it bites you.
+        </p>
+
+        <p>
+          <strong>Static-dir off-by-one.</strong> The combined deploy mounts the React build at <code>/app/static</code>; my FastAPI code was doing <code>Path(__file__).parent.parent.parent.parent / "static"</code> and resolving one directory above the container root. Walked the path counts on a piece of paper, dropped one <code>.parent</code>, problem went away.
+        </p>
+
+        <p>
+          <strong>MongoDB Atlas with a password full of special characters.</strong> The Atlas-generated password had a <code>+</code> in it, which gets URL-decoded as a space the moment it lands inside a connection URI. Fix: stop building the URI as a single env-var string, pull <code>DB_USER</code> and <code>DB_PASSWORD</code> as separate components, and <code>quote_plus</code> them before assembling. Three commits to actually get there.
+        </p>
+
+        <p>
+          <strong>Background pool auth errors.</strong> Atlas with <code>minPoolSize=1</code> was reconnecting in the background on every idle reap and spitting auth warnings into the logs even on healthy traffic. Setting <code>minPoolSize=0</code> made the warnings disappear &mdash; the connections still open on demand, they just don't get held warm.
+        </p>
+
+        <p>
+          <strong>Invalid TLS flags.</strong> My initial Mongo client config had <code>tlsAllowInvalidCertificates=True</code> and <code>tlsAllowInvalidHostnames=True</code> set &mdash; Atlas refuses both outright. Removed both.
+        </p>
+
+        <h2>The fetcher</h2>
+
+        <p>
+          The interesting layer. Pulling jobs from LinkedIn, Indeed, and Glassdoor isn't hard &mdash; <a href="https://github.com/Bunsly/JobSpy">JobSpy</a> handles all three behind one interface. Getting back <em>only the postings that are actually relevant to her</em> is the part that took thought.
+        </p>
+
+        <p>
+          The Amsterdam legal job market has three structural problems if you're filtering for entry-level English-language roles:
+        </p>
+
+        <figure class="post-diagram">
+          <svg viewBox="0 0 620 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Filter pipeline showing ~30 raw postings reducing to 4 to 8 surfaced per morning">
+            <defs>
+              <marker id="jt-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#4F7C82"/>
+              </marker>
+            </defs>
+
+            <!-- Stage 1: JobSpy fetch -->
+            <rect x="130" y="20" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+            <text x="310" y="44" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">JobSpy bulk fetch</text>
+            <text x="310" y="63" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">linkedin &middot; indeed &middot; glassdoor</text>
+            <text x="500" y="53" font-family="'JetBrains Mono', monospace" font-size="11" fill="#0B2E33" font-weight="600">~30 raw</text>
+
+            <line x1="310" y1="80" x2="310" y2="106" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#jt-arr)"/>
+
+            <!-- Stage 2: Language filter -->
+            <rect x="130" y="108" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+            <text x="310" y="132" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Language filter</text>
+            <text x="310" y="151" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">dutch stopword density &gt;= 7%</text>
+            <text x="500" y="141" font-family="'JetBrains Mono', monospace" font-size="11" fill="#4F7C82" font-weight="600">&minus;50%</text>
+
+            <line x1="310" y1="168" x2="310" y2="194" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#jt-arr)"/>
+
+            <!-- Stage 3: Seniority filter -->
+            <rect x="130" y="196" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+            <text x="310" y="220" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Seniority filter</text>
+            <text x="310" y="239" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">title regex + years-of-exp scan</text>
+            <text x="500" y="229" font-family="'JetBrains Mono', monospace" font-size="11" fill="#4F7C82" font-weight="600">&minus;30%</text>
+
+            <line x1="310" y1="256" x2="310" y2="282" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#jt-arr)"/>
+
+            <!-- Stage 4: Fuzzy dedup -->
+            <rect x="130" y="284" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+            <text x="310" y="308" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Fuzzy dedup</text>
+            <text x="310" y="327" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">rapidfuzz title 85 / company 90</text>
+            <text x="500" y="317" font-family="'JetBrains Mono', monospace" font-size="11" fill="#4F7C82" font-weight="600">&minus;1&ndash;2</text>
+
+            <line x1="310" y1="344" x2="310" y2="370" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#jt-arr)"/>
+
+            <!-- Stage 5: Triage inbox (accent fill to mark terminal stage) -->
+            <rect x="130" y="372" width="360" height="58" rx="6" fill="rgba(79, 124, 130, 0.10)" stroke="#4F7C82" stroke-width="1.5"/>
+            <text x="310" y="396" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Triage inbox</text>
+            <text x="310" y="415" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">X &middot; S &middot; A &middot; J &middot; K</text>
+            <text x="500" y="405" font-family="'JetBrains Mono', monospace" font-size="11" fill="#0B2E33" font-weight="600">4&ndash;8 surfaced</text>
+          </svg>
+          <figcaption class="post-diagram-caption">Fetcher pipeline &mdash; what survives between the upstream APIs and the morning triage queue.</figcaption>
+        </figure>
+
+        <p>
+          <strong>Language.</strong> Roughly half of postings are in Dutch. International firms post in English; Dutch firms post in Dutch. She was targeting the former. Dutch detection runs as a stopword-density check: I built a frozenset of about eighty Dutch function words (<code>voor</code>, <code>van</code>, <code>worden</code>, <code>werkzaamheden</code>, <code>vacature</code>, &hellip;) plus a list of strong indicators (<code>nederland</code>, <code>hbo</code>, <code>wo</code>, <code>mbo</code>, <code>cao</code>, <code>solliciteer</code>) and trigger on either &ge;7% stopword density in long text or a single strong-indicator hit anywhere.
+        </p>
+
+        <p>
+          <strong>Seniority.</strong> Search queries are tuned for junior roles ("junior legal counsel", "legal internship", "compliance trainee"), but senior postings leak through anything that mentions <em>legal</em> or <em>counsel</em>. A regex over the title catches the obvious cases &mdash; <code>senior</code>, <code>sr.</code>, <code>lead</code>, <code>principal</code>, <code>head of</code>, <code>director</code>, <code>manager</code>, <code>VP</code>, <code>chief</code>, <code>counsel II</code> &mdash; with word boundaries that took more iteration than I expected because "leadership" should not match <code>lead</code> and "managerial" should not match <code>manager</code>. The description gets a separate pass for experience requirements: <code>([3-9]|\d{2,})\s*\+?\s*years?</code> with Dutch and "minimum of" variants. Anything that trips either check gets dropped.
+        </p>
+
+        <p>
+          <strong>Duplicates.</strong> The same job is posted on all three platforms simultaneously. Running without dedup, "Junior Legal Counsel at Booking.com" appears three times. The dedup is fuzzy: <code>rapidfuzz.ratio</code> on title and company with thresholds at 85 and 90 respectively, plus a more generous location-similarity check that knows "Amsterdam, Netherlands" and "Amsterdam, NL" and "Amsterdam" are the same place. There's also a content-hashed exact-dedup ID per source so a refetch of the same platform doesn't double-insert.
+        </p>
+
+        <h2>What landed by midnight</h2>
+
+        <p>
+          Drag-drop pipeline. Split-pane keyboard inbox. Platform filter chips with counts. Job notes with dirty-state tracking so unsaved edits stay visible. Source badges (LinkedIn, Indeed, Glassdoor). Salary display when present. Age indicator ("posted 3 days ago"). Search bar. Status filter. Date-range filter (24h / 7d / 30d / 90d). Location filter. Quick stats at the top of the inbox showing new / applied / active counts. Error boundary so the whole app doesn't blank on a single bad job document. Skeleton loading screens. A pink accent throughout because she said the default green I'd picked looked like a tax website.
+        </p>
+
+        <p>
+          It deployed. She marked her first seven postings into the inbox before bed.
+        </p>
+      </div>
+
+      <div class="post-week-separator"><span>&middot; &middot; &middot;</span></div>
+
+      <div class="post-week">
+        <div class="post-week-label">Day 8 &middot; 12 March 2026</div>
+
+        <p>
+          A week of real use. She'd put roughly forty postings through the pipeline; eight had been applied to, two were already at first-stage interviews. The thing that surfaced now wasn't a bug &mdash; it was that <em>volume changes what you want to see</em>. With forty rows in the inbox you want to find the one good posting. With four hundred you want to understand the <em>shape</em> of where you're spending energy.
+        </p>
+
+        <h2>Three new pages</h2>
+
+        <p>
+          <strong>Import History.</strong> A <code>GET /jobs/import-history</code> endpoint that returns one row per fetch run with timestamps, the queries that ran, how many results came back per query, how many survived filtering, how many were inserted vs. skipped as duplicates. The page is a flat table because that's what the data wants to be. The point isn't visualisation, it's accountability: when she says "I haven't seen anything new from Indeed in a week" we can both look at the same screen and see why.
+        </p>
+
+        <p>
+          <strong>Statistics.</strong> Total jobs, by source, by location, by status. Application rate, success rate, an "actual apply rate" that excludes the "looking into" and "saved for later" buckets because those aren't really decisions. Time-range selector at the top.
+        </p>
+
+        <p>
+          <strong>Visual Progress.</strong> A heatmap of applications by date (calendar-style, GitHub-contributions shape), a tag cloud of skills extracted from descriptions, and a list of companies by location. The heatmap is the one I keep coming back to &mdash; activity is bursty in a job hunt, and seeing the bursts mapped to the calendar makes it easier to spot whether a flat week was a deliberate break or accidental drift.
+        </p>
+
+        <h2>CI/CD finally</h2>
+
+        <p>
+          Up until tonight I'd been deploying by running <code>koyeb deploy</code> from my terminal, which is fine until you forget you did it and the deployed version drifts from <code>main</code>. Added a GitHub Actions workflow that on every push to <code>main</code> runs <code>koyeb deploy</code> with the combined Dockerfile, ignoring <code>.git</code> and <code>node_modules</code> from the archive. The first run failed because the <code>koyeb</code> binary wasn't on <code>PATH</code> inside the GitHub runner; second run added <code>echo "$HOME/.koyeb/bin" &gt;&gt; $GITHUB_PATH</code> and the deploy went through.
+        </p>
+
+        <p>
+          While I was in there I noticed the backend was listening on port <code>8400</code> in the combined image, which the Koyeb health-checker was hitting at <code>8000</code>. Two-line Dockerfile fix. Also dropped supervisord from the combined image entirely &mdash; with no Celery worker to supervise it was just one more process to crash on boot &mdash; and called <code>uvicorn</code> directly as the container's <code>CMD</code>.
+        </p>
+      </div>
+
+      <div class="post-week-separator"><span>&middot; &middot; &middot;</span></div>
+
+      <div class="post-week">
+        <div class="post-week-label">Day 11 &middot; 15 March 2026</div>
+
+        <p>
+          She said: "I haven't seen any new jobs in three days." I went to look.
+        </p>
+
+        <p>
+          The fetch endpoint was returning <code>{"fetched": 247, "inserted": 0}</code>. Two hundred and forty-seven postings, zero of them new, and the inserted count was zero <em>every single time</em>. Which is suspicious in the specific way that "zero by coincidence" never is.
+        </p>
+
+        <h2>The dedup loop bug</h2>
+
+        <p>
+          The fuzzy dedup loop looked like this, in spirit:
+        </p>
+
+<pre><code>for job in fetched:
+    similar = repo.find_similar_jobs(job)
+    for existing in similar:
+        if _is_similar_job(existing, job):
+            logger.info("fuzzy skip")
+            continue  # &lt;- wrong control-flow target
+    repo.insert(job)</code></pre>
+
+        <p>
+          The <code>continue</code> resumes the <em>inner</em> loop &mdash; not the outer one. So when a similar job is found, the inner loop keeps walking other candidates, eventually exits naturally, and then <code>repo.insert(job)</code> runs anyway. That part was fine. The bug was elsewhere: <code>find_similar_jobs</code> was over-fetching candidates and the similarity key was so aggressively normalised that <em>every job looked similar to every other job</em>. Specifically, the slug function was stripping the words <code>junior</code>, <code>intern</code>, <code>internship</code>, <code>trainee</code>, <code>graduate</code> as "noise words that vary across postings" &mdash; which meant "Junior Legal Counsel at Booking" and "Legal Counsel Intern at Booking" collapsed to the same key. And once any candidate matched the title-similarity threshold, the existing dedup decision was wrong and the new job got dropped.
+        </p>
+
+        <p>
+          The fix: keep the domain words <em>in</em> the similarity key. "junior" is not noise, it's the entire point of the search. The slug now only strips punctuation and casing. The fuzz thresholds stay where they were.
+        </p>
+
+        <p>
+          That bug had been silently rejecting almost every new posting for three days. She'd noticed it as "the inbox is quiet." I'd noticed it as nothing, because I wasn't checking.
+        </p>
+
+        <h2>The Dutch-filter false positives</h2>
+
+        <p>
+          While I was in there, a second class of bug. The Dutch stopwords list had English words on it. <code>je</code>, <code>we</code>, <code>wij</code>, <code>werk</code>, <code>stage</code>. The most damaging was <code>stage</code> &mdash; it's a Dutch word for "internship", but it's also the English word for, well, <em>stage</em>. Every English posting that mentioned "early-stage company" or "stage three of the interview process" was being counted as Dutch and dropped.
+        </p>
+
+        <p>
+          The fix: remove ambiguous tokens from the bulk stopwords frozenset and move them to a tighter context-aware list of Dutch-specific job-title indicators (<code>juridisch</code>, <code>stagiair</code>, <code>functionaris</code>, <code>advocaat</code>, <code>notaris</code>, <code>medewerker</code>, <code>afdelingshoofd</code>, <code>teamleider</code>). The density check still runs over the broad stopword set, but the broad set is now strictly Dutch words with no English homographs.
+        </p>
+
+        <p>
+          Same evening: the experience-requirement regex was scanning only the first 1500 characters of the description &mdash; presumably written that way to keep the regex fast &mdash; and missing "minimum 5 years of experience required" clauses that sat in the requirements section near the bottom. Removed the slice, ran on the full description, no measurable performance impact.
+        </p>
+
+        <h2>Entry-level scoring</h2>
+
+        <p>
+          A boolean "is this entry-level or not" filter is too blunt &mdash; the postings that survive still vary wildly in how junior-friendly they actually are. Added an <code>_entry_level_score</code> function that walks the title and description and returns a 0&ndash;100 score: +15 for <code>junior</code>/<code>jr</code> in the title, +20 for <code>intern</code>/<code>internship</code>/<code>stage</code>, +15 for <code>trainee</code>/<code>graduate</code>/<code>entry-level</code>, &minus;15 per "N+ years experience" mention, &minus;20 for senior/lead/principal/staff terms. Clamped to [0, 100]. Stored on the job document so the inbox can sort by it.
+        </p>
+
+        <p>
+          This is the kind of feature that wouldn't have been worth building on day one and is obviously the right thing to have by week two. Heuristics calibrated against real postings beat pure pass/fail filters once you have a corpus.
+        </p>
+
+        <h2>The smaller fixes</h2>
+
+        <p>
+          <strong>Existence checks via <code>find_one</code>, not <code>count_documents</code>.</strong> The job-already-exists check was using <code>count_documents({"job_id": x})</code>, which scans more than it needs to even with an index. Switched to <code>find_one(..., projection={"_id": 1})</code>, which short-circuits at the first hit.
+        </p>
+
+        <p>
+          <strong>Per-site retry fallback.</strong> The bulk JobSpy call sometimes 500s on one platform but not the others. The original code threw away the whole batch on a single failure. New behaviour: if the bulk call fails, retry each site individually, take what comes back, log the ones that didn't.
+        </p>
+
+        <p>
+          <strong>Configurable queries.</strong> Hardcoded queries went into a <code>FETCH_QUERIES</code> env var as a comma-separated string. The DEFAULT list (junior legal counsel, legal intern, legal trainee, compliance internship, &hellip;) ships as the fallback, but she can now tune the search without a redeploy.
+        </p>
+
+        <p>
+          <strong>HTTP 429 for the rate-limiter.</strong> The fetch endpoint was returning 500 when the upstream rate limiter rejected a call. Switched to <code>429 Too Many Requests</code> with a <code>Retry-After</code> header so the frontend can show a sensible error instead of "something went wrong."
+        </p>
+
+        <p>
+          <strong>Email reminder service.</strong> A background scheduler that scans applied jobs older than fourteen days with no status update and sends a daily digest reminder. The toast notification on the Applied Jobs page surfaces the same thing in-app: "you applied to X 16 days ago, nothing's moved, maybe follow up." It's the one feature I added that's purely behavioural rather than technical &mdash; the bottleneck on her hunt isn't finding jobs, it's remembering to chase the ones already in flight.
+        </p>
+
+        <h2>Where it stands</h2>
+
+        <p>
+          Eleven days in. Two interviews scheduled, one of them already at second-round stage. The pipeline currently holds 73 postings in various states. The fetcher pulls roughly thirty new candidates per run, the filter keeps somewhere between four and eight, dedup drops one or two of those, and on a typical morning she has three or four new postings to triage with the inbox keyboard shortcuts. The whole loop, fetch to triage to decision, is under five minutes a day.
+        </p>
+
+        <p>
+          The repo is at <a href="https://github.com/catancs/job-application-dashboard">github.com/catancs/job-application-dashboard</a>. The README has a full local-setup walk-through &mdash; <code>docker compose up</code> brings up Mongo, Redis, the backend, and the frontend on a single command if you want to try it. The deployed version is keyed to her search; the open-source version is generic and the entry-level / Dutch-filter logic is plain enough Python that retargeting it to a different country or seniority band is a config change rather than a rewrite.
+        </p>
+
+        <p>
+          Next post on this one will be when something more interesting goes wrong &mdash; or, ideally, when she has an offer to consider.
+        </p>
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>&copy; 2026 Catalin-Stefan Niculescu</span>
+      <div class="footer-links">
+        <a href="https://github.com/catancs" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.linkedin.com/in/catalin-stefan-niculescu-9aa531197/" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -70,6 +70,48 @@
         Over time, as your history builds up, the second layer gets better and the third one fires less and less. It learns from your real patterns.
       </p>
 
+      <figure class="post-diagram">
+        <svg viewBox="0 0 620 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three-layer estimation cascade: keyword scoring, trigram history match, Haiku LLM fallback for rare disagreement cases">
+          <defs>
+            <marker id="mtr-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#4F7C82"/>
+            </marker>
+          </defs>
+
+          <!-- Layer 1 -->
+          <rect x="130" y="20" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="44" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Layer 1</text>
+          <text x="310" y="63" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">keyword + repo-size scoring</text>
+          <text x="500" y="53" font-family="'JetBrains Mono', monospace" font-size="11" fill="#0B2E33" font-weight="600">free</text>
+
+          <line x1="310" y1="80" x2="310" y2="106" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#mtr-arr)"/>
+
+          <!-- Layer 2 -->
+          <rect x="130" y="108" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="132" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Layer 2</text>
+          <text x="310" y="151" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">trigram history match</text>
+          <text x="500" y="141" font-family="'JetBrains Mono', monospace" font-size="11" fill="#0B2E33" font-weight="600">free</text>
+
+          <!-- Dashed arrow into Layer 3 + inline label -->
+          <line x1="310" y1="168" x2="310" y2="210" stroke="#4F7C82" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#mtr-arr)"/>
+          <text x="320" y="192" font-family="'JetBrains Mono', monospace" font-size="9.5" fill="#4F7C82" font-style="italic">fires only when 1 + 2 disagree</text>
+
+          <!-- Layer 3 (dashed border = rare path) -->
+          <rect x="130" y="212" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <text x="310" y="236" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Layer 3</text>
+          <text x="310" y="255" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">haiku one-word complexity call</text>
+          <text x="500" y="245" font-family="'JetBrains Mono', monospace" font-size="11" fill="#0B2E33" font-weight="600">$0.0001</text>
+
+          <line x1="310" y1="272" x2="310" y2="298" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#mtr-arr)"/>
+
+          <!-- Terminal -->
+          <rect x="130" y="300" width="360" height="58" rx="6" fill="rgba(79, 124, 130, 0.10)" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="324" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">cost estimate emitted</text>
+          <text x="310" y="343" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">rendered into claude code's statusline</text>
+        </svg>
+        <figcaption class="post-diagram-caption">Estimation cascade &mdash; the third layer is dashed because it almost never has to run.</figcaption>
+      </figure>
+
       <h2>How I built it</h2>
 
       <p>
