@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>context-introspect: teaching Claude to audit its own context – Catalin-Stefan Niculescu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <nav>
+    <div class="container">
+      <a href="../index.html" class="nav-name">catalin niculescu</a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../projects.html">Projects</a></li>
+        <li><a href="../about.html">About</a></li>
+        <li><a href="../contact.html">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <h1 style="font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 0.5rem;">context-introspect: teaching Claude to audit its own context</h1>
+
+    <div class="post-meta">
+      <span>28 May 2026</span>
+      <a href="https://github.com/catancs/context-introspect" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+    </div>
+
+    <div class="post-content">
+
+      <p>
+        I have a lot of skills and MCP servers installed in <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>. They accumulate. You install a skill to try it once, you add an MCP server for some integration you needed that week, and then you move on — and none of it ever leaves.
+      </p>
+
+      <p>
+        Here's the part I hadn't thought about: every one of those is loaded into the context window on <em>every single turn</em>. Skill descriptions, subagent definitions, MCP tool schemas — they're all sitting in the prompt before I've typed a single word. And most of them I never use. They were eating my context silently, in the background, for no purpose at all.
+      </p>
+
+      <p>
+        So I built <strong>context-introspect</strong> — a skill that turns Claude's attention inward and audits its own setup.
+      </p>
+
+      <h2>The gap</h2>
+
+      <p>
+        Claude Code already gives you <code>/context</code> (which shows a total) and <code>/usage</code> (which shows the current session). But neither answers the question that actually matters: <em>which of this stuff have I not touched in weeks, and what is it costing me?</em> I wanted something that looked at my real history and told me, honestly, what was dead weight — and then helped me get rid of it.
+      </p>
+
+      <h2>What it does</h2>
+
+      <p>
+        You ask Claude <strong>"audit my context."</strong> It scans your actual session history, works out how often each skill, subagent, and MCP server has <em>really</em> been invoked — and when you last used it — weighs that against what each one costs in tokens, and hands you a verdict: keep, cut, or review.
+      </p>
+
+      <p>
+        Then, the part I cared about most: it can take action. It will <strong>reversibly disable</strong> the dead weight for you. Not delete — disable. Every item is moved aside, and the exact undo command is printed right next to it. A tool whose entire job is telling you what to remove should never be able to lose your data. So I made it physically incapable of it.
+      </p>
+
+      <h2>What I decided early</h2>
+
+      <p>
+        Three choices shaped the whole thing, and I'd make each one the opposite way for a human-facing tool:
+      </p>
+
+      <p>
+        <strong>Real usage, not guesses.</strong> It reads your session transcripts and counts actual invocations, tallied across <em>all</em> your projects — so it never tells you to cut something you lean on in another repo. "Unused" means unused everywhere I can see.
+      </p>
+
+      <p>
+        <strong>Honest about what it can't measure.</strong> Token figures are estimates, and they're labelled as estimates. It can't yet price an individual MCP server (more on that below), so it flags unused servers by usage and <em>says so</em> rather than inventing a number.
+      </p>
+
+      <p>
+        <strong>Reversible, never destructive.</strong> Disable, with an undo. Always.
+      </p>
+
+      <h2>The hurdle: the audit tool that bloated the thing it was auditing</h2>
+
+      <p>
+        The first version embarrassed me, and it's worth telling because the fix became the whole architecture.
+      </p>
+
+      <p>
+        I'd had the script dump everything it found as one big blob of JSON — every skill, every server, every field — and Claude would read all of it back in to write the report. It worked. But the output was about <strong>30KB</strong>. Which means: to produce a report about context bloat, Claude was loading 30KB of JSON <em>into the very context window I was trying to shrink.</em> The tool was the disease. The cure was counterproductive.
+      </p>
+
+      <p>
+        So I split it in two. A small Python script does the heavy lifting — it reads the megabytes of transcripts, crunches the usage, decides the verdicts, and emits a tiny, pre-digested summary of a few KB. Claude only ever sees that summary and reasons over it. The script crunches; the agent advises. Auditing your context stopped costing you context.
+      </p>
+
+      <figure class="post-diagram">
+        <svg viewBox="0 0 620 372" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The cruncher/brain split: a local script reads megabytes of transcripts and emits a few-KB digest, which is the only thing the agent reads.">
+          <defs>
+            <marker id="ci-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#4F7C82"/>
+            </marker>
+          </defs>
+
+          <!-- Raw data -->
+          <rect x="130" y="20" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="44" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">~/.claude transcripts + config</text>
+          <text x="310" y="63" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">megabytes of session JSONL</text>
+          <text x="500" y="53" font-family="'JetBrains Mono', monospace" font-size="11" fill="#0B2E33" font-weight="600">raw</text>
+
+          <line x1="310" y1="80" x2="310" y2="106" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#ci-arr)"/>
+
+          <!-- Cruncher -->
+          <rect x="130" y="108" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="132" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">analyze.py &mdash; the cruncher</text>
+          <text x="310" y="151" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">reads, tallies, decides verdicts &mdash; locally</text>
+          <text x="500" y="141" font-family="'JetBrains Mono', monospace" font-size="11" fill="#0B2E33" font-weight="600">stdlib</text>
+
+          <line x1="310" y1="168" x2="310" y2="210" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#ci-arr)"/>
+          <text x="320" y="192" font-family="'JetBrains Mono', monospace" font-size="9.5" fill="#4F7C82" font-style="italic">emits a few KB &mdash; not 30KB</text>
+
+          <!-- Digest -->
+          <rect x="130" y="212" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="236" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">compact digest</text>
+          <text x="310" y="255" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">totals &middot; cut &middot; review &middot; kept</text>
+          <text x="500" y="245" font-family="'JetBrains Mono', monospace" font-size="11" fill="#0B2E33" font-weight="600">~4KB</text>
+
+          <line x1="310" y1="272" x2="310" y2="298" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#ci-arr)"/>
+
+          <!-- Brain -->
+          <rect x="130" y="300" width="360" height="58" rx="6" fill="rgba(79, 124, 130, 0.10)" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="324" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Claude reasons &amp; advises</text>
+          <text x="310" y="343" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">report + reversible disable &mdash; never reads the raw data</text>
+        </svg>
+        <figcaption class="post-diagram-caption">The script does the heavy reading so the agent never has to &mdash; auditing context without bloating it.</figcaption>
+      </figure>
+
+      <h2>What I took from Karpathy</h2>
+
+      <p>
+        I didn't invent the principles behind this. Andrej Karpathy laid out a set of guidelines for working with coding agents — the ones that turned into that <code>CLAUDE.md</code> half of GitHub is now running. I read back through them and pulled out the few that mattered most for a tool like this:
+      </p>
+
+      <p>
+        <strong>Simplicity first.</strong> The whole thing is one Python file (standard library only — nothing to <code>pip install</code>) and one Markdown instruction file. That's the entire skill.
+      </p>
+
+      <p>
+        <strong>Think before you act.</strong> Verify your assumptions instead of charging ahead. That's exactly the cross-project-safety rule (never flag something you use elsewhere) and the measured-vs-estimated honesty — the tool refuses to state a guess as a fact.
+      </p>
+
+      <p>
+        <strong>Surgical changes.</strong> Touch only what's confirmed, and only that. The disable step never moves anything you didn't explicitly approve, and it's all reversible.
+      </p>
+
+      <p>
+        I took the highest-leverage ideas from the way he approaches skills and applied them here. Credit where it's due — the discipline is his; I just pointed it at a different problem.
+      </p>
+
+      <h2>How I built it</h2>
+
+      <p>
+        <code>scripts/analyze.py</code> is pure Python standard library. It reads <code>~/.claude/projects/*/*.jsonl</code> — your session transcripts — tallies tool calls per skill, subagent, and MCP server across every project, estimates token cost, and prints the compact digest. <code>SKILL.md</code> is the set of instructions Claude follows: run the script, reason over the digest, present the report, offer the reversible disable.
+      </p>
+
+      <p>
+        It ships as a Claude Code plugin, and the repo doubles as its own marketplace — so installing it is two lines:
+      </p>
+
+<pre><code>/plugin marketplace add catancs/context-introspect
+/plugin install context-introspect@catancs</code></pre>
+
+      <p>
+        Then you just ask Claude to <strong>audit my context.</strong>
+      </p>
+
+      <h2>What happened when I ran it on myself</h2>
+
+      <p>
+        On my own machine it found three MCP servers I'd never once called: <code>filesystem</code> and <code>memory</code> — both redundant, since Claude Code has native file tools and my memory lives in plain Markdown files, not the memory MCP's graph — and <code>monday</code>, which I just never use from the agent. It also turned up a pile of project skills and subagents I'd stopped using weeks ago. I disabled the three servers in one go. Reversibly, of course.
+      </p>
+
+      <p>
+        It also caught me in a lie my own headline was telling: an early version over-counted what you could "reclaim" by including plugin-managed skills it couldn't actually disable. Running it on real data is what exposed that — clean unit tests never would have. So the honest version reports a smaller, truer number and tells you the rest is reclaimable only by uninstalling the plugin. I'd rather under-promise.
+      </p>
+
+      <h2>What's still rough &mdash; and what's next</h2>
+
+      <p>
+        The big one: it can't yet measure the <em>exact</em> per-turn cost of an MCP server. Those tool schemas are often the heaviest thing in your context — easily thousands of tokens each — but measuring them precisely means launching each server and counting what it exposes. That's the next thing I'm building, and it's the number that hurts most, so it's worth doing right. For now the tool is honest about the gap: unused servers are flagged by usage, marked "unmeasured," and called out as the likely biggest win.
+      </p>
+
+      <p>
+        Slash-command usage isn't tracked yet either, so commands are judged by size rather than use. Also noted, right in the output.
+      </p>
+
+      <h2>Why I'm sharing this</h2>
+
+      <p>
+        My setup had quietly turned into thousands of tokens of things I don't use, loaded on every single turn, and nothing would tell me. If you live in Claude Code, you almost certainly have the same blind spot. It's open source, it's reversible, and it takes one command to try.
+      </p>
+
+      <p>
+        The code is on <a href="https://github.com/catancs/context-introspect">GitHub</a>.
+      </p>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>&copy; 2026 Catalin-Stefan Niculescu</span>
+      <div class="footer-links">
+        <a href="https://github.com/catancs" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.linkedin.com/in/catalin-stefan-niculescu-9aa531197/" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
