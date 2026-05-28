@@ -75,7 +75,7 @@
       </p>
 
       <p>
-        <strong>Honest about what it can't measure.</strong> Token figures are estimates, and they're labelled as estimates. It can't yet price an individual MCP server (more on that below), so it flags unused servers by usage and <em>says so</em> rather than inventing a number.
+        <strong>Honest about what it estimates.</strong> Token figures are estimates, labelled as such. The default audit won't <em>guess</em> an MCP server's price — it flags unused servers by usage instead — but there's an opt-in pass that measures the real number (more on that below).
       </p>
 
       <p>
@@ -186,14 +186,14 @@
         It also caught me in a lie my own headline was telling: an early version over-counted what you could "reclaim" by including plugin-managed skills it couldn't actually disable. Running it on real data is what exposed that — clean unit tests never would have. So the honest version reports a smaller, truer number and tells you the rest is reclaimable only by uninstalling the plugin. I'd rather under-promise.
       </p>
 
-      <h2>What's still rough &mdash; and what's next</h2>
+      <h2>What I built next &mdash; and what's still rough</h2>
 
       <p>
-        The big one: it can't yet measure the <em>exact</em> per-turn cost of an MCP server. Those tool schemas are often the heaviest thing in your context — easily thousands of tokens each — but measuring them precisely means launching each server and counting what it exposes. That's the next thing I'm building, and it's the number that hurts most, so it's worth doing right. For now the tool is honest about the gap: unused servers are flagged by usage, marked "unmeasured," and called out as the likely biggest win.
+        When I first wrote this, the honest gap was that it couldn't measure the <em>exact</em> per-turn cost of an MCP server. Those tool schemas are usually the heaviest thing in your context — easily thousands of tokens each — but the number doesn't live on disk; it only exists once the server is running. So I built it: an opt-in pass that briefly launches each stdio server, does the MCP handshake, asks for its tool list, and counts the real tokens. On my own machine it clocked one server at <strong>1,171 tokens &mdash; every single turn</strong>, for two tools I almost never use. That's the whole difference between "you have a server called X" and "X is costing you 1,171 tokens a turn" — only the second one makes you do anything about it.
       </p>
 
       <p>
-        Slash-command usage isn't tracked yet either, so commands are judged by size rather than use. Also noted, right in the output.
+        What's genuinely still rough: slash-command usage isn't tracked yet, so commands are judged by size rather than use. And the measurement reads the first page of a server's tool list, so one exposing an enormous catalogue could be slightly under-counted. Both are noted right in the output — the tool would rather admit a gap than paper over one.
       </p>
 
       <h2>Why I'm sharing this</h2>
