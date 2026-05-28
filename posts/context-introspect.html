@@ -37,31 +37,31 @@
     <div class="post-content">
 
       <p>
-        I have a lot of skills and MCP servers installed in <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>. They accumulate. You install a skill to try it once, you add an MCP server for some integration you needed that week, and then you move on — and none of it ever leaves.
+        I have a lot of skills and MCP servers installed in <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>. They accumulate. You install a skill to try it once, you add an MCP server for some integration you needed that week, and then you move on, and none of it ever leaves.
       </p>
 
       <p>
-        Here's the part I hadn't thought about: every one of those is loaded into the context window on <em>every single turn</em>. Skill descriptions, subagent definitions, MCP tool schemas — they're all sitting in the prompt before I've typed a single word. And most of them I never use. They were eating my context silently, in the background, for no purpose at all.
+        Here's the part I hadn't thought about: every one of those is loaded into the context window on <em>every single turn</em>. Skill descriptions, subagent definitions, MCP tool schemas. They're all sitting in the prompt before I've typed a single word. And most of them I never use. They were eating my context silently, in the background, for no purpose at all.
       </p>
 
       <p>
-        So I built <strong>context-introspect</strong> — a skill that turns Claude's attention inward and audits its own setup.
+        So I built <strong>context-introspect</strong>, a skill that turns Claude's attention inward and audits its own setup.
       </p>
 
       <h2>The gap</h2>
 
       <p>
-        Claude Code already gives you <code>/context</code> (which shows a total) and <code>/usage</code> (which shows the current session). But neither answers the question that actually matters: <em>which of this stuff have I not touched in weeks, and what is it costing me?</em> I wanted something that looked at my real history and told me, honestly, what was dead weight — and then helped me get rid of it.
+        Claude Code already gives you <code>/context</code> (which shows a total) and <code>/usage</code> (which shows the current session). But neither answers the question that actually matters: <em>which of this stuff have I not touched in weeks, and what is it costing me?</em> I wanted something that looked at my real history and told me, honestly, what was dead weight, and then helped me get rid of it.
       </p>
 
       <h2>What it does</h2>
 
       <p>
-        You ask Claude <strong>"audit my context."</strong> It scans your actual session history, works out how often each skill, subagent, and MCP server has <em>really</em> been invoked — and when you last used it — weighs that against what each one costs in tokens, and hands you a verdict: keep, cut, or review.
+        You ask Claude <strong>"audit my context."</strong> It scans your actual session history, works out how often each skill, subagent, and MCP server has <em>really</em> been invoked (and when you last used it), weighs that against what each one costs in tokens, and hands you a verdict: keep, cut, or review.
       </p>
 
       <p>
-        Then, the part I cared about most: it can take action. It will <strong>reversibly disable</strong> the dead weight for you. Not delete — disable. Every item is moved aside, and the exact undo command is printed right next to it. A tool whose entire job is telling you what to remove should never be able to lose your data. So I made it physically incapable of it.
+        Then, the part I cared about most: it can take action. It will <strong>reversibly disable</strong> the dead weight for you. Not delete. Disable. Every item is moved aside, and the exact undo command is printed right next to it. A tool whose entire job is telling you what to remove should never be able to lose your data. So I made it physically incapable of it.
       </p>
 
       <h2>What I decided early</h2>
@@ -71,11 +71,11 @@
       </p>
 
       <p>
-        <strong>Real usage, not guesses.</strong> It reads your session transcripts and counts actual invocations, tallied across <em>all</em> your projects — so it never tells you to cut something you lean on in another repo. "Unused" means unused everywhere I can see.
+        <strong>Real usage, not guesses.</strong> It reads your session transcripts and counts actual invocations, tallied across <em>all</em> your projects, so it never tells you to cut something you lean on in another repo. "Unused" means unused everywhere I can see.
       </p>
 
       <p>
-        <strong>Honest about what it estimates.</strong> Token figures are estimates, labelled as such. The default audit won't <em>guess</em> an MCP server's price — it flags unused servers by usage instead — but there's an opt-in pass that measures the real number (more on that below).
+        <strong>Honest about what it estimates.</strong> Token figures are estimates, labelled as such. The default audit won't <em>guess</em> an MCP server's price; it flags unused servers by usage instead. But there's an opt-in pass that measures the real number (more on that below).
       </p>
 
       <p>
@@ -89,11 +89,11 @@
       </p>
 
       <p>
-        I'd had the script dump everything it found as one big blob of JSON — every skill, every server, every field — and Claude would read all of it back in to write the report. It worked. But the output was about <strong>30KB</strong>. Which means: to produce a report about context bloat, Claude was loading 30KB of JSON <em>into the very context window I was trying to shrink.</em> The tool was the disease. The cure was counterproductive.
+        I'd had the script dump everything it found as one big blob of JSON (every skill, every server, every field), and Claude would read all of it back in to write the report. It worked. But the output was about <strong>30KB</strong>. Which means: to produce a report about context bloat, Claude was loading 30KB of JSON <em>into the very context window I was trying to shrink.</em> The tool was the disease. The cure was counterproductive.
       </p>
 
       <p>
-        So I split it in two. A small Python script does the heavy lifting — it reads the megabytes of transcripts, crunches the usage, decides the verdicts, and emits a tiny, pre-digested summary of a few KB. Claude only ever sees that summary and reasons over it. The script crunches; the agent advises. Auditing your context stopped costing you context.
+        So I split it in two. A small Python script does the heavy lifting. It reads the megabytes of transcripts, crunches the usage, decides the verdicts, and emits a tiny, pre-digested summary of a few KB. Claude only ever sees that summary and reasons over it. The script crunches; the agent advises. Auditing your context stopped costing you context.
       </p>
 
       <figure class="post-diagram">
@@ -114,12 +114,12 @@
 
           <!-- Cruncher -->
           <rect x="130" y="108" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
-          <text x="310" y="132" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">analyze.py &mdash; the cruncher</text>
-          <text x="310" y="151" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">reads, tallies, decides verdicts &mdash; locally</text>
+          <text x="310" y="132" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">analyze.py: the cruncher</text>
+          <text x="310" y="151" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">reads, tallies, decides verdicts locally</text>
           <text x="500" y="141" font-family="'JetBrains Mono', monospace" font-size="11" fill="#0B2E33" font-weight="600">stdlib</text>
 
           <line x1="310" y1="168" x2="310" y2="210" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#ci-arr)"/>
-          <text x="320" y="192" font-family="'JetBrains Mono', monospace" font-size="9.5" fill="#4F7C82" font-style="italic">emits a few KB &mdash; not 30KB</text>
+          <text x="320" y="192" font-family="'JetBrains Mono', monospace" font-size="9.5" fill="#4F7C82" font-style="italic">emits a few KB, not 30KB</text>
 
           <!-- Digest -->
           <rect x="130" y="212" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
@@ -132,23 +132,23 @@
           <!-- Brain -->
           <rect x="130" y="300" width="360" height="58" rx="6" fill="rgba(79, 124, 130, 0.10)" stroke="#4F7C82" stroke-width="1.5"/>
           <text x="310" y="324" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Claude reasons &amp; advises</text>
-          <text x="310" y="343" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">report + reversible disable &mdash; never reads the raw data</text>
+          <text x="310" y="343" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">report + reversible disable, never the raw data</text>
         </svg>
-        <figcaption class="post-diagram-caption">The script does the heavy reading so the agent never has to &mdash; auditing context without bloating it.</figcaption>
+        <figcaption class="post-diagram-caption">The script does the heavy reading so the agent never has to, auditing context without bloating it.</figcaption>
       </figure>
 
       <h2>What I took from Karpathy</h2>
 
       <p>
-        I didn't invent the principles behind this. Andrej Karpathy laid out a set of guidelines for working with coding agents — the ones that turned into that <code>CLAUDE.md</code> half of GitHub is now running. I read back through them and pulled out the few that mattered most for a tool like this:
+        I didn't invent the principles behind this. Andrej Karpathy laid out a set of guidelines for working with coding agents, the ones that turned into that <code>CLAUDE.md</code> half of GitHub is now running. I read back through them and pulled out the few that mattered most for a tool like this:
       </p>
 
       <p>
-        <strong>Simplicity first.</strong> The whole thing is one Python file (standard library only — nothing to <code>pip install</code>) and one Markdown instruction file. That's the entire skill.
+        <strong>Simplicity first.</strong> The whole thing is one Python file (standard library only, nothing to <code>pip install</code>) and one Markdown instruction file. That's the entire skill.
       </p>
 
       <p>
-        <strong>Think before you act.</strong> Verify your assumptions instead of charging ahead. That's exactly the cross-project-safety rule (never flag something you use elsewhere) and the measured-vs-estimated honesty — the tool refuses to state a guess as a fact.
+        <strong>Think before you act.</strong> Verify your assumptions instead of charging ahead. That's exactly the cross-project-safety rule (never flag something you use elsewhere) and the measured-vs-estimated honesty: the tool refuses to state a guess as a fact.
       </p>
 
       <p>
@@ -156,17 +156,17 @@
       </p>
 
       <p>
-        I took the highest-leverage ideas from the way he approaches skills and applied them here. Credit where it's due — the discipline is his; I just pointed it at a different problem.
+        I took the highest-leverage ideas from the way he approaches skills and applied them here. Credit where it's due. The discipline is his; I just pointed it at a different problem.
       </p>
 
       <h2>How I built it</h2>
 
       <p>
-        <code>scripts/analyze.py</code> is pure Python standard library. It reads <code>~/.claude/projects/*/*.jsonl</code> — your session transcripts — tallies tool calls per skill, subagent, and MCP server across every project, estimates token cost, and prints the compact digest. <code>SKILL.md</code> is the set of instructions Claude follows: run the script, reason over the digest, present the report, offer the reversible disable.
+        <code>scripts/analyze.py</code> is pure Python standard library. It reads <code>~/.claude/projects/*/*.jsonl</code> (your session transcripts), tallies tool calls per skill, subagent, and MCP server across every project, estimates token cost, and prints the compact digest. <code>SKILL.md</code> is the set of instructions Claude follows: run the script, reason over the digest, present the report, offer the reversible disable.
       </p>
 
       <p>
-        It ships as a Claude Code plugin, and the repo doubles as its own marketplace — so installing it is two lines:
+        It ships as a Claude Code plugin, and the repo doubles as its own marketplace, so installing it is two lines:
       </p>
 
 <pre><code>/plugin marketplace add catancs/context-introspect
@@ -179,21 +179,17 @@
       <h2>What happened when I ran it on myself</h2>
 
       <p>
-        On my own machine it found three MCP servers I'd never once called: <code>filesystem</code> and <code>memory</code> — both redundant, since Claude Code has native file tools and my memory lives in plain Markdown files, not the memory MCP's graph — and <code>monday</code>, which I just never use from the agent. It also turned up a pile of project skills and subagents I'd stopped using weeks ago. I disabled the three servers in one go. Reversibly, of course.
+        On my own machine it found three MCP servers I'd never once called: <code>filesystem</code> and <code>memory</code> (both redundant, since Claude Code has native file tools and my memory lives in plain Markdown files, not the memory MCP's graph), and <code>monday</code>, which I just never use from the agent. It also turned up a pile of project skills and subagents I'd stopped using weeks ago. I disabled the three servers in one go. Reversibly, of course.
       </p>
 
       <p>
-        It also caught me in a lie my own headline was telling: an early version over-counted what you could "reclaim" by including plugin-managed skills it couldn't actually disable. Running it on real data is what exposed that — clean unit tests never would have. So the honest version reports a smaller, truer number and tells you the rest is reclaimable only by uninstalling the plugin. I'd rather under-promise.
+        It also caught me in a lie my own headline was telling: an early version over-counted what you could "reclaim" by including plugin-managed skills it couldn't actually disable. Running it on real data is what exposed that. Clean unit tests never would have. So the honest version reports a smaller, truer number and tells you the rest is reclaimable only by uninstalling the plugin. I'd rather under-promise.
       </p>
 
-      <h2>What I built next &mdash; and what's still rough</h2>
+      <h2>What I built next</h2>
 
       <p>
-        When I first wrote this, the honest gap was that it couldn't measure the <em>exact</em> per-turn cost of an MCP server. Those tool schemas are usually the heaviest thing in your context — easily thousands of tokens each — but the number doesn't live on disk; it only exists once the server is running. So I built it: an opt-in pass that briefly launches each stdio server, does the MCP handshake, asks for its tool list, and counts the real tokens. On my own machine it clocked one server at <strong>1,171 tokens &mdash; every single turn</strong>, for two tools I almost never use. That's the whole difference between "you have a server called X" and "X is costing you 1,171 tokens a turn" — only the second one makes you do anything about it.
-      </p>
-
-      <p>
-        What's genuinely still rough: slash-command usage isn't tracked yet, so commands are judged by size rather than use. And the measurement reads the first page of a server's tool list, so one exposing an enormous catalogue could be slightly under-counted. Both are noted right in the output — the tool would rather admit a gap than paper over one.
+        When I first wrote this, the honest gap was that it couldn't measure the <em>exact</em> per-turn cost of an MCP server. Those tool schemas are usually the heaviest thing in your context, easily thousands of tokens each, but the number doesn't live on disk; it only exists once the server is running. So I built it: an opt-in pass that briefly launches each stdio server, does the MCP handshake, asks for its tool list, and counts the real tokens. On my own machine it clocked one server at <strong>1,171 tokens, every single turn</strong>, for two tools I almost never use. That's the whole difference between "you have a server called X" and "X is costing you 1,171 tokens a turn." Only the second one makes you do anything about it.
       </p>
 
       <h2>Why I'm sharing this</h2>
