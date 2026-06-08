@@ -319,7 +319,7 @@ section {
   font-size: 0.78rem;
   color: var(--text-muted);
   white-space: nowrap;
-  min-width: 5.5rem;
+  min-width: 7.5rem;
 }
 
 .post-title {
