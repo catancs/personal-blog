@@ -1,13 +1,51 @@
-/* === Variables === */
+/* === Design tokens === */
 :root {
-  --dark: #0B2E33;
-  --accent: #4F7C82;
-  --accent-soft: rgba(79, 124, 130, 0.1);
+  /* Light theme (default) */
+  --bg: #f7fafa;
+  --surface: #ffffff;
   --text: #0B2E33;
   --text-muted: #4F7C82;
-  --bg: #f7fafa;
+  --accent: #4F7C82;
+  --accent-soft: rgba(79, 124, 130, 0.10);
   --border: #d4e4e6;
+  --code-bg: #0B2E33;
+  --code-text: #e2e2f0;
+
+  /* Radius scale (one system, used everywhere) */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-pill: 999px;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --max-width: 680px;
+}
+
+/* Dark theme: follow the OS unless the visitor forced light */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1f22;
+    --surface: #11292e;
+    --text: #e6f0f0;
+    --text-muted: #93b4b7;
+    --accent: #6fb3b9;
+    --accent-soft: rgba(111, 179, 185, 0.14);
+    --border: #1e3a3f;
+    --code-bg: #081619;
+    --code-text: #d7e6e6;
+  }
+}
+
+/* Dark theme: forced on via the toggle (overrides OS) */
+:root[data-theme="dark"] {
+  --bg: #0c1f22;
+  --surface: #11292e;
+  --text: #e6f0f0;
+  --text-muted: #93b4b7;
+  --accent: #6fb3b9;
+  --accent-soft: rgba(111, 179, 185, 0.14);
+  --border: #1e3a3f;
+  --code-bg: #081619;
+  --code-text: #d7e6e6;
 }
 
 *, *::before, *::after {
@@ -27,21 +65,31 @@ body {
   color: var(--text);
   line-height: 1.75;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.3s var(--ease), color 0.3s var(--ease);
 }
 
 a {
   color: var(--accent);
   text-decoration: none;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, color 0.2s;
 }
 
 a:hover {
   opacity: 0.75;
 }
 
+/* Keyboard focus: visible ring for everyone tabbing through */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+  opacity: 1;
+}
+
 ::selection {
   background: var(--accent);
-  color: #fff;
+  color: var(--bg);
 }
 
 /* === Layout === */
@@ -79,6 +127,7 @@ nav .container {
   display: flex;
   gap: 2rem;
   list-style: none;
+  align-items: center;
 }
 
 .nav-links a {
@@ -96,6 +145,48 @@ nav .container {
 .nav-links a.active {
   color: var(--accent);
 }
+
+/* === Theme toggle === */
+.nav-toggle-li {
+  display: flex;
+  align-items: center;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s, background 0.2s;
+}
+
+.theme-toggle:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.theme-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Show the icon that represents the theme you'd switch TO */
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: block; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: block; }
+  :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: none; }
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+:root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
 /* === Hero === */
 .hero {
@@ -129,7 +220,7 @@ nav .container {
   float: right;
   width: 180px;
   height: auto;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   margin: 0.2rem 0 1rem 1.5rem;
   shape-outside: margin-box;
 }
@@ -195,7 +286,7 @@ section {
   background: var(--accent-soft);
   color: var(--accent);
   padding: 0.3rem 0.75rem;
-  border-radius: 100px;
+  border-radius: var(--radius-pill);
   font-size: 0.78rem;
   font-weight: 600;
 }
@@ -241,6 +332,7 @@ section {
 }
 
 .post-item:hover .post-title {
+  color: var(--accent);
   text-decoration-color: var(--accent);
 }
 
@@ -376,7 +468,7 @@ section {
   color: var(--accent);
   background: var(--accent-soft);
   padding: 0.2rem 0.55rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 /* === About === */
@@ -406,7 +498,7 @@ section {
   background: var(--accent-soft);
   border-left: 3px solid var(--accent);
   padding: 1.5rem 1.8rem;
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
 .work-with-me h2 {
@@ -497,16 +589,16 @@ section {
   background: var(--accent-soft);
   color: var(--accent);
   padding: 0.15rem 0.4rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 0.85rem;
   font-family: 'JetBrains Mono', monospace;
 }
 
 .post-content pre {
-  background: var(--dark);
-  color: #e2e2f0;
+  background: var(--code-bg);
+  color: var(--code-text);
   padding: 1.2rem 1.5rem;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow-x: auto;
   margin: 1.2rem 0;
   font-size: 0.82rem;
@@ -549,9 +641,16 @@ section {
 }
 
 /* === Post diagrams === */
+/* Diagrams are hand-drawn SVG built for a light surface, so they always
+   sit on a white figure card. In dark mode this reads as an intentional
+   inset rather than letting white shapes clash with the dark page. */
 .post-diagram {
   margin: 1.8rem 0 0.4rem;
   display: block;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.4rem 1rem;
 }
 
 .post-diagram svg {
@@ -584,7 +683,7 @@ section {
   color: var(--accent);
   background: var(--accent-soft);
   padding: 0.35rem 0.75rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   margin-bottom: 1.5rem;
 }
 
@@ -667,6 +766,25 @@ footer a:hover {
 .footer-links {
   display: flex;
   gap: 1.5rem;
+}
+
+/* === Motion: subtle one-time entrance, off for reduced-motion === */
+@media (prefers-reduced-motion: no-preference) {
+  .hero,
+  main > section,
+  .about-block,
+  .post-content {
+    animation: fade-up 0.6s var(--ease) both;
+  }
+
+  main > section:nth-of-type(1) { animation-delay: 0.06s; }
+  main > section:nth-of-type(2) { animation-delay: 0.12s; }
+  main > section:nth-of-type(3) { animation-delay: 0.18s; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* === Responsive === */
