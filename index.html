@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <meta name="theme-color" content="#f7fafa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c1f22" media="(prefers-color-scheme: dark)">
+  <script>(function(){try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
   <title>Catalin-Stefan Niculescu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,6 +23,12 @@
         <li><a href="projects.html">Projects</a></li>
         <li><a href="about.html">About</a></li>
         <li><a href="contact.html">Contact</a></li>
+        <li class="nav-toggle-li">
+          <button type="button" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </li>
       </ul>
     </div>
   </nav>
@@ -51,6 +61,10 @@
     <section>
       <div class="section-label">Latest Posts</div>
       <div class="post-list">
+        <a href="posts/eg-walker-richtext.html" class="post-item">
+          <span class="post-date">08/06/2026</span>
+          <span class="post-title">eg-walker-richtext: a textbook, an impossibility claim, and a rich-text CRDT</span>
+        </a>
         <a href="posts/context-introspect.html" class="post-item">
           <span class="post-date">28/05/2026</span>
           <span class="post-title">context-introspect: teaching Claude to audit its own context</span>
@@ -83,11 +97,11 @@
       <div class="reading-list">
         <div class="reading-item">
           <span class="reading-label">Currently reading</span>
-          <span class="reading-value">Prague in Black and Gold — Peter Demetz</span>
+          <span class="reading-value">Prague in Black and Gold by Peter Demetz</span>
         </div>
         <div class="reading-item">
           <span class="reading-label">Last read</span>
-          <span class="reading-value">Powers and Thrones — Dan Jones</span>
+          <span class="reading-value">Powers and Thrones by Dan Jones</span>
         </div>
       </div>
     </section>
@@ -101,6 +115,8 @@
       </div>
     </div>
   </footer>
+
+  <script src="theme.js"></script>
 
 </body>
 </html>
