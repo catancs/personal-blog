@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <meta name="theme-color" content="#f7fafa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c1f22" media="(prefers-color-scheme: dark)">
+  <script>(function(){try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+  <title>eg-walker-richtext: a textbook, an impossibility claim, and a rich-text CRDT - Catalin-Stefan Niculescu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <nav>
+    <div class="container">
+      <a href="../index.html" class="nav-name">catalin niculescu</a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../projects.html">Projects</a></li>
+        <li><a href="../about.html">About</a></li>
+        <li><a href="../contact.html">Contact</a></li>
+        <li class="nav-toggle-li">
+          <button type="button" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <h1 style="font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 0.5rem;">eg-walker-richtext: a textbook, an impossibility claim, and a rich-text CRDT</h1>
+
+    <div class="post-meta">
+      <span>8 June 2026</span>
+      <a href="https://github.com/catancs/eg-walker-richtext" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+    </div>
+
+    <div class="post-content">
+
+      <p>
+        This one didn't start as a project. It started as a chapter. I was reading <a href="https://dataintensive.net/" target="_blank" rel="noopener"><em>Designing Data-Intensive Applications</em></a>, Martin Kleppmann's database book, going through it slowly: B-trees, how an index is actually stored on disk, encoding and schema evolution, replication, message brokers. Then I hit the part on collaborative editing, and it mentioned <strong>Operational Transformation</strong>, the algorithm behind Google Docs. The bit where two people type into the same document at the same time and it all just works.
+      </p>
+
+      <p>
+        I'd used Google Docs a thousand times and never once wondered how the cursor-dance underneath it stays consistent. So I stopped and pulled on the thread. And the thread, it turned out, went a very long way down.
+      </p>
+
+      <h2>The question that wouldn't leave me alone</h2>
+
+      <p>
+        OT is clever, but it's old, and the more I read the more it looked <em>fragile</em>. It needs a central server to be correct. The decentralized versions have a long graveyard of published-then-disproven algorithms behind them. Merging two long-offline edits can be catastrophically slow. My actual question was simple and a little naive: <em>is this the best we can do, or has somebody fixed it?</em>
+      </p>
+
+      <p>
+        So I did the obvious thing and tried to reason out how I'd improve it. Store the original operations instead of the transformed ones. Only do expensive work when edits genuinely conflict, which in real documents is almost never. Keep a lean event log and rebuild the conflict-resolution machinery only for the rare overlapping bits.
+      </p>
+
+      <p>
+        Then I went looking, and found out I'd just described an algorithm called <strong>Eg-walker</strong>, published in 2024. Best-paper award at EuroSys 2025. And here's the part that made me laugh out loud: one of its two authors is <em>Martin Kleppmann</em>, the author of the very book that sent me down this hole. The other is Joseph Gentle, who'd built the OT engine inside Google Wave a decade earlier and spent years concluding it was the wrong path. I'd reinvented the state of the art by accident. Which is humbling, but it's also the best signal you can get that you're asking the right question.
+      </p>
+
+      <h2>The actual gap</h2>
+
+      <p>
+        Reinventing something that already exists isn't a contribution. So I kept reading, looking for where Eg-walker actually <em>stops</em>. And it stops in a very specific place: <strong>it only does plain text.</strong> The paper says so directly. Rich text, the bold and the italics and the links and the comments, is listed as future work. No shipping implementation had it.
+      </p>
+
+      <p>
+        Then I found the sentence that turned a curiosity into a project. The team that got closest to it, the people behind a CRDT library called Loro, had effectively published an <strong>impossibility claim</strong>: that <a href="https://www.inkandswitch.com/peritext/" target="_blank" rel="noopener">Peritext</a> (the reference design for collaborative rich text) <em>cannot</em> be modeled on Eg-walker. Their reasoning is sound on its face. Eg-walker replays operations and needs each one to mean the same thing no matter what state the document is in. Rich-text formatting is the opposite: whether a character ends up bold depends on the order things merged. So they routed rich text onto a separate layer entirely, and paid for it with permanent per-character metadata.
+      </p>
+
+      <p>
+        A stated impossibility is the most interesting thing a person who likes problems can find. I didn't want to disprove Loro, their engineering is excellent and their workaround is reasonable. I wanted to know whether the impossibility was real or just a framing.
+      </p>
+
+      <h2>The idea: stop asking replay to do the hard part</h2>
+
+      <p>
+        The whole thing turned on one observation. The impossibility argument assumes rich-text resolution has to happen <em>during</em> replay. But it doesn't have to happen there at all.
+      </p>
+
+      <p>
+        So I split the problem in two. Replay stays completely pure and order-independent: it treats a "bold starts here" marker as nothing more than a zero-width character, drops it into the sequence, and never once asks what it means. All the order-dependent Peritext logic, which character is bold, which formatting is newer, where a paragraph breaks, gets pulled out into a separate <strong>pure function</strong> that runs only when you actually read the document. Replay places the marks. Resolution interprets them. Neither one ever does the other's job.
+      </p>
+
+      <p>
+        That separation is the entire trick, and it's enough to dissolve the impossibility. Replay never needs to be order-dependent because it never decides anything. Resolution is allowed to be order-dependent because it's a deterministic function of the final history, so every replica computes the identical answer.
+      </p>
+
+      <figure class="post-diagram">
+        <svg viewBox="0 0 620 486" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Five-layer architecture: a vendored causal graph, a new op log with mark and block ops, a pure replay layer that only places zero-width anchors, a new pure resolution function that computes all rich-text semantics, and an O(document) resolved snapshot. The replay layer is unchanged base Eg-walker; resolution and the snapshot are the new contribution.">
+          <defs>
+            <marker id="ew-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#4F7C82"/>
+            </marker>
+          </defs>
+
+          <!-- 1. Causal graph (vendored) -->
+          <rect x="110" y="20" width="400" height="56" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="44" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="13.5" font-weight="600" fill="#0B2E33">1 &middot; Causal graph</text>
+          <text x="310" y="62" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">immutable event graph &middot; (agent,seq) ids + parents</text>
+          <text x="522" y="51" font-family="'JetBrains Mono', monospace" font-size="9" fill="#9bb3b5" font-style="italic">vendored</text>
+
+          <line x1="310" y1="78" x2="310" y2="100" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#ew-arr)"/>
+
+          <!-- 2. Op log (new ops) -->
+          <rect x="110" y="102" width="400" height="56" rx="6" fill="rgba(79, 124, 130, 0.10)" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="126" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="13.5" font-weight="600" fill="#0B2E33">2 &middot; Op log</text>
+          <text x="310" y="144" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">ins &middot; del &middot; markStart &middot; markEnd &middot; blockBoundary</text>
+          <text x="522" y="133" font-family="'JetBrains Mono', monospace" font-size="9" fill="#2c8a2c" font-style="italic">new ops</text>
+
+          <line x1="310" y1="160" x2="310" y2="182" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#ew-arr)"/>
+
+          <!-- 3. Pure replay (extended, but pure) -->
+          <rect x="110" y="184" width="400" height="66" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="207" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="13.5" font-weight="600" fill="#0B2E33">3 &middot; Pure replay</text>
+          <text x="310" y="225" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">base FugueMax &middot; anchors integrate as zero-width items</text>
+          <text x="310" y="240" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">no stickiness &middot; no order-dependence</text>
+          <text x="522" y="220" font-family="'JetBrains Mono', monospace" font-size="9" fill="#9bb3b5" font-style="italic">unchanged</text>
+
+          <line x1="310" y1="252" x2="310" y2="288" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#ew-arr)"/>
+          <text x="320" y="274" font-family="'JetBrains Mono', monospace" font-size="9" fill="#4F7C82" font-style="italic">replay places anchors but never interprets them</text>
+
+          <!-- 4. Pure resolution (the contribution) -->
+          <rect x="110" y="290" width="400" height="80" rx="6" fill="rgba(79, 124, 130, 0.10)" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="313" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="13.5" font-weight="700" fill="#0B2E33">4 &middot; Pure resolution</text>
+          <text x="310" y="331" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">deterministic fn(items, causal graph) &rarr; spans + blocks</text>
+          <text x="310" y="347" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">expand / contract &middot; per-position LWW</text>
+          <text x="310" y="362" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">paragraph-start inheritance &middot; block partition</text>
+          <text x="522" y="334" font-family="'JetBrains Mono', monospace" font-size="9" fill="#2c8a2c" font-style="italic">the idea</text>
+
+          <line x1="310" y1="372" x2="310" y2="394" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#ew-arr)"/>
+
+          <!-- 5. Resolved snapshot (new) -->
+          <rect x="110" y="396" width="400" height="66" rx="6" fill="rgba(79, 124, 130, 0.10)" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="419" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="13.5" font-weight="600" fill="#0B2E33">5 &middot; Resolved snapshot</text>
+          <text x="310" y="437" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">{ text, spans, blocks }</text>
+          <text x="310" y="452" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">O(document) &middot; zero per-character metadata</text>
+          <text x="522" y="432" font-family="'JetBrains Mono', monospace" font-size="9" fill="#2c8a2c" font-style="italic">new</text>
+        </svg>
+        <figcaption class="post-diagram-caption">Replay (grey, unchanged Eg-walker) only places zero-width anchors. Every order-dependent rich-text decision lives in the pure resolution function (green). That split is the whole refutation.</figcaption>
+      </figure>
+
+      <h2>The hurdle: a fuzzer found a bug twenty tests missed</h2>
+
+      <p>
+        My first working version had a subtle optimization. When you type at the edge of a bold span, the engine decided right then, during placement, whether your new character should join the bold or fall outside it. It passed every test I wrote. Twenty of them, including the full suite of Peritext's famous failure cases. I thought I was done.
+      </p>
+
+      <p>
+        I wasn't, and the thing that caught me is the part of this project I'm proudest of. I'd written a <strong>differential fuzzer</strong>: it generates random concurrent editing histories and runs each one through both my engine and a completely independent reference model I built on a different CRDT, then checks they agree. On its very first random seed, it found a disagreement. Three replicas of the same document, fed the same edits in different orders, produced <em>different results</em>. A convergence bug. The one thing a CRDT is never allowed to do.
+      </p>
+
+      <p>
+        The cause was exactly that clever optimization. Deciding bold-or-not during placement meant peeking at the half-built document, and the half-built document looks different on different machines depending on which concurrent edits have arrived so far. My twenty hand-written tests never caught it because none of them happened to interleave a formatting mark and a paragraph break and a concurrent insert in the one specific way that triggers it. The fuzzer found that needle on attempt number one.
+      </p>
+
+      <p>
+        The fix wasn't a patch. It was the architecture in the diagram above. I ripped the decision out of placement entirely and made placement dumb and pure, and moved every formatting decision into the resolution function where it can see the whole finished history. The bug that the fuzzer found is what forced the design into its correct, cleaner shape. I'd have shipped the subtly-broken version without it.
+      </p>
+
+      <h2>Evidence over assertions</h2>
+
+      <p>
+        Because the whole point was to refute a claim, I couldn't just say "it works." I had to be able to <em>show</em> it, to a reader who knows this space and is rightly skeptical. So the repo is built evidence-first.
+      </p>
+
+      <p>
+        Every Peritext failure case the design has to survive is a test <em>named after its citation</em>: <code>peritext_P1_concurrent_overlap_bold</code>, <code>yjs_197_orphaned_markers</code>, and so on. The README's claims link straight to the tests that back them. The differential fuzzer ran clean across more than a hundred thousand random histories over dozens of seed bases, with the engine converging on itself every single time.
+      </p>
+
+      <p>
+        And here's the moment that justified the paranoia: at one point a check reported "ten thousand iterations, all green," and a verification pass caught that the ten thousand had all used the <em>same</em> starting seed. Fresh seeds surfaced real disagreements it had been quietly skipping. So I made the comparison genuinely sound, proved it by deliberately injecting a bug and confirming it fails on the first iteration, and only then believed the green. The benchmarks get the same honesty: my reference engine is slower than Yjs and Automerge and its log is larger, and the README says so plainly. The one real claim, that the resolved document carries zero per-character metadata, is the only one I make.
+      </p>
+
+      <h2>What it is, and what it isn't</h2>
+
+      <p>
+        It's a reference implementation and a proof of an idea, not a production library, and the README is loud about that. There's no binary codec yet, no network layer, no nested lists, no cursor presence. Those are real work and they're listed as exactly that: deferred. I'd rather ship a small true thing than a big thing with an asterisk I'm hoping you won't read.
+      </p>
+
+      <p>
+        I should also be honest about the method, since this whole blog is partly about building with agents: I didn't hand-type fifteen thousand lines of CRDT code over a weekend. I drove this the way I drive everything now, orchestrating agents to research, implement, and adversarially review each piece, with me steering the architecture and refusing to accept a green checkmark I couldn't independently reproduce. The convergence bug, the cherry-picked seed, the honest benchmark framing: those came out of building review and verification into the loop, not out of trusting any single pass. The discipline is the product as much as the code is.
+      </p>
+
+      <h2>Why I'm sharing this</h2>
+
+      <p>
+        I started this because a database textbook made me curious about Google Docs, and I followed that curiosity past the edge of what the textbook covered, past the edge of the published algorithm, and into a spot where someone had written down the word "can't." That word is an invitation. It turned out "can't" really meant "not the way we tried it," and the way around it was to stop asking one part of the system to do the hard part and let a different part do it instead.
+      </p>
+
+      <p>
+        The first implementation of Peritext-semantics rich text on Eg-walker is open source, MIT-licensed, with the evidence to back every claim sitting right next to the code. If you live anywhere near CRDTs, or you just like watching an impossibility turn into a decomposition, it's on <a href="https://github.com/catancs/eg-walker-richtext">GitHub</a>.
+      </p>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>&copy; 2026 Catalin-Stefan Niculescu</span>
+      <div class="footer-links">
+        <a href="https://github.com/catancs" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.linkedin.com/in/catalin-stefan-niculescu-9aa531197/" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../theme.js"></script>
+
+</body>
+</html>
