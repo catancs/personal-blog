@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spendwall: an agent spending firewall – Catalin-Stefan Niculescu</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <meta name="theme-color" content="#f7fafa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c1f22" media="(prefers-color-scheme: dark)">
+  <script>(function(){try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+  <title>Spendwall: an agent spending firewall - Catalin-Stefan Niculescu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -19,6 +23,12 @@
         <li><a href="../projects.html">Projects</a></li>
         <li><a href="../about.html">About</a></li>
         <li><a href="../contact.html">Contact</a></li>
+        <li class="nav-toggle-li">
+          <button type="button" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </li>
       </ul>
     </div>
   </nav>
@@ -40,7 +50,7 @@
         <div class="post-week-label">Week 1 &middot; 1 May 2026</div>
 
         <p>
-          Two days ago I opened a fresh folder on my Desktop and started writing <strong>Spendwall</strong>. The workspace is up, the daemon runs, the CLI moves it around &mdash; but most of what makes it useful is still ahead of me. I'm writing this post anyway, while it's early, so the second post about it can talk about what actually changed.
+          Two days ago I opened a fresh folder on my Desktop and started writing <strong>Spendwall</strong>. The workspace is up, the daemon runs, the CLI moves it around, but most of what makes it useful is still ahead of me. I'm writing this post anyway, while it's early, so the second post about it can talk about what actually changed.
         </p>
 
         <h2>What it's going to be</h2>
@@ -54,7 +64,7 @@
         </p>
 
         <p>
-          <strong>Observe.</strong> Capture every API call from the agents you run &mdash; Claude Code, Codex, your own Python or TypeScript scripts hitting OpenAI or Anthropic &mdash; and show what each one spent, tagged by whatever axis you care about (agent, customer, project, environment).
+          <strong>Observe.</strong> Capture every API call from the agents you run, Claude Code, Codex, your own Python or TypeScript scripts hitting OpenAI or Anthropic, and show what each one spent, tagged by whatever axis you care about (agent, customer, project, environment).
         </p>
 
         <p>
@@ -62,11 +72,11 @@
         </p>
 
         <p>
-          <strong>Hand the budget back to the agent.</strong> Through an MCP server, the agent itself can call <code>get_remaining_budget</code> or <code>estimate_cost</code> before it commits to a million-token plan. Cost-aware agents make better decisions than cost-blind ones. That's the architectural bet I most want to test &mdash; almost every cost-control tool I've seen treats the agent as the adversary, but the agent is in the best position to do something about a tight budget if you just let it ask.
+          <strong>Hand the budget back to the agent.</strong> Through an MCP server, the agent itself can call <code>get_remaining_budget</code> or <code>estimate_cost</code> before it commits to a million-token plan. Cost-aware agents make better decisions than cost-blind ones. That's the architectural bet I most want to test, almost every cost-control tool I've seen treats the agent as the adversary, but the agent is in the best position to do something about a tight budget if you just let it ask.
         </p>
 
         <p>
-          Local-first by default. SQLite for the audit ledger, TOML for human-edited config. Fail-open by default, configurable to fail-closed for compliance customers. No prompt rewriting, no model substitution, no context compression &mdash; the proxy is byte-for-byte transparent. Cloud sync is M3+, a strict superset of the local mode rather than a prerequisite.
+          Local-first by default. SQLite for the audit ledger, TOML for human-edited config. Fail-open by default, configurable to fail-closed for compliance customers. No prompt rewriting, no model substitution, no context compression, the proxy is byte-for-byte transparent. Cloud sync is M3+, a strict superset of the local mode rather than a prerequisite.
         </p>
 
         <h2>What stands up today</h2>
@@ -94,11 +104,11 @@
         </p>
 
         <p>
-          <strong>Path B</strong> &mdash; the loopback HTTP proxy that lets you instrument Claude Code or Codex by setting two env vars. This is the wedge that turns Spendwall from a workspace into a useful thing.
+          <strong>Path B</strong>: the loopback HTTP proxy that lets you instrument Claude Code or Codex by setting two env vars. This is the wedge that turns Spendwall from a workspace into a useful thing.
         </p>
 
         <p>
-          <strong>Path A</strong> &mdash; the Python and TypeScript SDK wrappers for custom agents that import the OpenAI or Anthropic SDK directly.
+          <strong>Path A</strong>: the Python and TypeScript SDK wrappers for custom agents that import the OpenAI or Anthropic SDK directly.
         </p>
 
         <p>
@@ -120,7 +130,7 @@
         <h2>Why I'm posting now</h2>
 
         <p>
-          The post-it-when-it-ships pattern means I never write down the early decisions, which are usually the most interesting ones to other engineers. The fact that the architecture is already shaped before any of the actual capture paths exist &mdash; supervisor, audit pipeline, panel, hot-swap config, kill-switch dashmap &mdash; means there are real engineering choices behind the skeleton, even if you can't see them yet from the outside.
+          The post-it-when-it-ships pattern means I never write down the early decisions, which are usually the most interesting ones to other engineers. The fact that the architecture is already shaped before any of the actual capture paths exist, supervisor, audit pipeline, panel, hot-swap config, kill-switch dashmap, means there are real engineering choices behind the skeleton, even if you can't see them yet from the outside.
         </p>
 
         <p>
@@ -128,7 +138,7 @@
         </p>
 
         <p>
-          Repo lives at <a href="https://github.com/catancs/spendwall">github.com/catancs/spendwall</a> &mdash; or will the moment I push it public. I'll come back here with a follow-up the day Path B is forwarding real telemetry.
+          Repo lives at <a href="https://github.com/catancs/spendwall">github.com/catancs/spendwall</a>, or will the moment I push it public. I'll come back here with a follow-up the day Path B is forwarding real telemetry.
         </p>
       </div>
 
@@ -138,7 +148,7 @@
         <div class="post-week-label">Week 2 &middot; 7 May 2026</div>
 
         <p>
-          Six days and 200-odd commits later. The skeleton has muscles now: Path B started forwarding real telemetry on Monday, the SDKs ship, the MCP server is live, and the kill switch cuts an in-flight upstream call in under 250ms in tests. This is the follow-up I promised at the end of week one &mdash; the one I said I'd write the day Path B was real.
+          Six days and 200-odd commits later. The skeleton has muscles now: Path B started forwarding real telemetry on Monday, the SDKs ship, the MCP server is live, and the kill switch cuts an in-flight upstream call in under 250ms in tests. This is the follow-up I promised at the end of week one, the one I said I'd write the day Path B was real.
         </p>
 
         <h2>What's actually working</h2>
@@ -200,15 +210,15 @@
             <text x="310" y="419" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4F7C82">ANTHROPIC_BASE_URL</text>
             <text x="408" y="430" font-family="'JetBrains Mono', monospace" font-size="9" fill="#4F7C82" font-style="italic">HTTP</text>
           </svg>
-          <figcaption class="post-diagram-caption">One policy engine, four interfaces &mdash; the MCP spoke is the one most cost-control tools don't ship.</figcaption>
+          <figcaption class="post-diagram-caption">One policy engine, four interfaces, the MCP spoke is the one most cost-control tools don't ship.</figcaption>
         </figure>
 
         <p>
-          <strong>Path B &mdash; the loopback proxy.</strong> Set <code>OPENAI_BASE_URL</code> and <code>ANTHROPIC_BASE_URL</code> at the local proxy and Spendwall is in front of every API call. <code>/v1/messages</code> for Anthropic, <code>/v1/chat/completions</code>, <code>/v1/responses</code>, and <code>/v1/completions</code> for OpenAI. Forwarded byte-for-byte to upstream, audited on the way back, broadcast as <code>SpendObserved</code> events to anything subscribed to the panel websocket. Blocked calls return a real <code>402 PAYMENT_REQUIRED</code> with a structured error body, which feels like the most HTTP-honest thing the proxy can do when policy says no.
+          <strong>Path B: the loopback proxy.</strong> Set <code>OPENAI_BASE_URL</code> and <code>ANTHROPIC_BASE_URL</code> at the local proxy and Spendwall is in front of every API call. <code>/v1/messages</code> for Anthropic, <code>/v1/chat/completions</code>, <code>/v1/responses</code>, and <code>/v1/completions</code> for OpenAI. Forwarded byte-for-byte to upstream, audited on the way back, broadcast as <code>SpendObserved</code> events to anything subscribed to the panel websocket. Blocked calls return a real <code>402 PAYMENT_REQUIRED</code> with a structured error body, which feels like the most HTTP-honest thing the proxy can do when policy says no.
         </p>
 
         <p>
-          <strong>Path A &mdash; Python and TypeScript SDKs.</strong> Both ship as importable wrappers. In Python, <code>spendwall.openai.wrap(client)</code> patches <code>chat.completions</code> and <code>responses</code> in place; <code>spendwall.anthropic.wrap(client)</code> patches <code>messages.create</code>. In TypeScript, <code>createSpendwallOpenAI()</code> and <code>createSpendwallAnthropic()</code> return drop-in clients. Both SDKs talk to the daemon over a Unix domain socket with 0600 perms &mdash; faster than loopback HTTP and lets the daemon trust the caller via filesystem ownership rather than an additional auth layer.
+          <strong>Path A: Python and TypeScript SDKs.</strong> Both ship as importable wrappers. In Python, <code>spendwall.openai.wrap(client)</code> patches <code>chat.completions</code> and <code>responses</code> in place; <code>spendwall.anthropic.wrap(client)</code> patches <code>messages.create</code>. In TypeScript, <code>createSpendwallOpenAI()</code> and <code>createSpendwallAnthropic()</code> return drop-in clients. Both SDKs talk to the daemon over a Unix domain socket with 0600 perms, faster than loopback HTTP and lets the daemon trust the caller via filesystem ownership rather than an additional auth layer.
         </p>
 
         <p>
@@ -216,15 +226,15 @@
         </p>
 
         <p>
-          <strong>The kill switch.</strong> Per-agent and global. The integration test that asserts a kill-switch flip cancels in-flight upstream calls within 250ms passes consistently. Mid-stream kills are handled too &mdash; if you hit the kill while an SSE response is streaming back, the proxy aborts the upstream connection and writes a partial-cost audit row using whatever usage tokens it had already parsed off the side channel. Same path handles client disconnects.
+          <strong>The kill switch.</strong> Per-agent and global. The integration test that asserts a kill-switch flip cancels in-flight upstream calls within 250ms passes consistently. Mid-stream kills are handled too, if you hit the kill while an SSE response is streaming back, the proxy aborts the upstream connection and writes a partial-cost audit row using whatever usage tokens it had already parsed off the side channel. Same path handles client disconnects.
         </p>
 
         <p>
-          <strong>Approval flow.</strong> When a policy decision is "approval required", the proxy doesn't 4xx and walk away &mdash; it holds the request open, inserts a row into the <code>approvals</code> table, broadcasts a websocket event so the panel pings, and polls the row until you grant, deny, or it times out. Holding the request rather than streaming the approval back means it works with any HTTP client unchanged. There's a background expirer that clears stale pending approvals, and panel endpoints (<code>GET /api/approvals</code>, <code>POST /api/approvals/:id/resolve</code>) for the dashboard.
+          <strong>Approval flow.</strong> When a policy decision is "approval required", the proxy doesn't 4xx and walk away, it holds the request open, inserts a row into the <code>approvals</code> table, broadcasts a websocket event so the panel pings, and polls the row until you grant, deny, or it times out. Holding the request rather than streaming the approval back means it works with any HTTP client unchanged. There's a background expirer that clears stale pending approvals, and panel endpoints (<code>GET /api/approvals</code>, <code>POST /api/approvals/:id/resolve</code>) for the dashboard.
         </p>
 
         <p>
-          <strong>The MCP server.</strong> The architectural bet from week one. It's running. <code>spendwall-mcp</code> is an <a href="https://github.com/modelcontextprotocol/rust-sdk">rmcp</a> stdio server that exposes <code>get_remaining_budget</code> and <code>estimate_cost</code> as MCP tools, backed by a UDS read-only projection from the daemon (<code>/v1/policy/snapshot</code>). The agent &mdash; Claude Code, Codex, whatever &mdash; can now ask <code>get_remaining_budget</code> before it commits to a million-token plan. Cost-aware agents really do make different decisions than cost-blind ones; I've watched it happen in my own sessions for the past three days.
+          <strong>The MCP server.</strong> The architectural bet from week one. It's running. <code>spendwall-mcp</code> is an <a href="https://github.com/modelcontextprotocol/rust-sdk">rmcp</a> stdio server that exposes <code>get_remaining_budget</code> and <code>estimate_cost</code> as MCP tools, backed by a UDS read-only projection from the daemon (<code>/v1/policy/snapshot</code>). The agent (Claude Code, Codex, whatever) can now ask <code>get_remaining_budget</code> before it commits to a million-token plan. Cost-aware agents really do make different decisions than cost-blind ones; I've watched it happen in my own sessions for the past three days.
         </p>
 
         <p>
@@ -232,15 +242,15 @@
         </p>
 
         <p>
-          <strong>Stripe webhook ingestion and reconciliation.</strong> HMAC-SHA256 signature verification, a replay window with saturating arithmetic (a negative window almost slipped through &mdash; tests caught it), and a <code>StripeReconciler</code> that matches invoice line items back to <code>spend_events</code> rows. The day Anthropic or OpenAI invoices arrive, the daemon reconciles the local audit ledger against what was actually billed and flags drift.
+          <strong>Stripe webhook ingestion and reconciliation.</strong> HMAC-SHA256 signature verification, a replay window with saturating arithmetic (a negative window almost slipped through, tests caught it), and a <code>StripeReconciler</code> that matches invoice line items back to <code>spend_events</code> rows. The day Anthropic or OpenAI invoices arrive, the daemon reconciles the local audit ledger against what was actually billed and flags drift.
         </p>
 
         <p>
-          <strong>Pre-flight cost estimation.</strong> Tokenizer-based, with a per-provider story. OpenAI uses <code>tiktoken-rs</code> with lazy-cached encoders &mdash; entirely local, microseconds per call. Anthropic doesn't have a local tokenizer, so the proxy makes a <code>/v1/messages/count_tokens</code> call against the upstream API with a 50ms timeout. If it times out, it falls back to a byte-based estimate. That fallback path is the kind of thing I'd normally over-engineer; here I just want the proxy to not become the bottleneck.
+          <strong>Pre-flight cost estimation.</strong> Tokenizer-based, with a per-provider story. OpenAI uses <code>tiktoken-rs</code> with lazy-cached encoders, entirely local, microseconds per call. Anthropic doesn't have a local tokenizer, so the proxy makes a <code>/v1/messages/count_tokens</code> call against the upstream API with a 50ms timeout. If it times out, it falls back to a byte-based estimate. That fallback path is the kind of thing I'd normally over-engineer; here I just want the proxy to not become the bottleneck.
         </p>
 
         <p>
-          <strong>Hot-reload everything.</strong> <code>caps.toml</code>, <code>pricing.toml</code>, <code>alerts.toml</code> &mdash; all watched on disk via a debounced file watcher, all hot-swapped through <code>ArcSwap</code> handles with last-good-wins semantics. Edit a cap, save, the daemon picks it up without a restart. If you save garbage, the daemon keeps running on the last good config and logs the parse error.
+          <strong>Hot-reload everything.</strong> <code>caps.toml</code>, <code>pricing.toml</code>, <code>alerts.toml</code>, all watched on disk via a debounced file watcher, all hot-swapped through <code>ArcSwap</code> handles with last-good-wins semantics. Edit a cap, save, the daemon picks it up without a restart. If you save garbage, the daemon keeps running on the last good config and logs the parse error.
         </p>
 
         <p>
@@ -254,11 +264,11 @@
         <h2>Things that hardened</h2>
 
         <p>
-          The architectural bet from week one &mdash; <em>let the agent ask about the budget</em> &mdash; held up. The MCP server is the smallest, simplest crate in the workspace, and the most useful part of the system from where I'm sitting. Two read-only tools and a UDS-backed snapshot client. That's it. Cost-aware agents really do scope their plans differently when they can ask; I no longer think this is a hopeful claim.
+          The architectural bet from week one (<em>let the agent ask about the budget</em>) held up. The MCP server is the smallest, simplest crate in the workspace, and the most useful part of the system from where I'm sitting. Two read-only tools and a UDS-backed snapshot client. That's it. Cost-aware agents really do scope their plans differently when they can ask; I no longer think this is a hopeful claim.
         </p>
 
         <p>
-          The fail-open default, on the other hand, took longer to feel right than I expected. Every instinct says compliance-shaped tools should fail closed. But for the audience that adopts this first &mdash; solo devs and small teams putting it in front of their agents &mdash; fail-closed means "your agent stops working when my daemon crashes," which is a worse outcome than missed enforcement. Strict mode is one env var away. That asymmetry felt wrong for a day and now feels obviously correct.
+          The fail-open default, on the other hand, took longer to feel right than I expected. Every instinct says compliance-shaped tools should fail closed. But for the audience that adopts this first (solo devs and small teams putting it in front of their agents), fail-closed means "your agent stops working when my daemon crashes," which is a worse outcome than missed enforcement. Strict mode is one env var away. That asymmetry felt wrong for a day and now feels obviously correct.
         </p>
 
         <p>
@@ -268,7 +278,7 @@
         <h2>What's still WIP</h2>
 
         <p>
-          The release pipeline ships binaries but the signed-binary distribution and the Gatekeeper notarization on macOS aren't done; first-run on a fresh Mac currently requires the right-click-Open dance. <code>launchd</code> on macOS and <code>systemd --user</code> on Linux supervisor units are written but not yet installed by <code>spendwall init</code>. Cloud sync is M3 work and hasn't started, by design &mdash; local-first means local-first works first. And the panel needs real charts; the current "show me the last hour by tag" view is a list, not a graph.
+          The release pipeline ships binaries but the signed-binary distribution and the Gatekeeper notarization on macOS aren't done; first-run on a fresh Mac currently requires the right-click-Open dance. <code>launchd</code> on macOS and <code>systemd --user</code> on Linux supervisor units are written but not yet installed by <code>spendwall init</code>. Cloud sync is M3 work and hasn't started, by design, local-first means local-first works first. And the panel needs real charts; the current "show me the last hour by tag" view is a list, not a graph.
         </p>
 
         <p>
@@ -282,11 +292,11 @@
         </p>
 
         <p>
-          The next post will be when something genuinely surprises me &mdash; either a compliance customer asks for something I haven't designed for, or someone uses the MCP tools in a way I didn't anticipate, or the proxy hits a class of upstream behavior I didn't plan for. That post is more interesting to write than this one. This one is just bookkeeping.
+          The next post will be when something genuinely surprises me, either a compliance customer asks for something I haven't designed for, or someone uses the MCP tools in a way I didn't anticipate, or the proxy hits a class of upstream behavior I didn't plan for. That post is more interesting to write than this one. This one is just bookkeeping.
         </p>
 
         <p>
-          Repo is at <a href="https://github.com/catancs/spendwall">github.com/catancs/spendwall</a>. <code>brew install catancs/tap/spendwall</code>, <code>spendwall init</code>, <code>spendwall start</code>, <code>spendwall panel</code> &mdash; that's the whole onboarding for the local mode. SDKs are <code>pip install spendwall</code> and <code>npm install spendwall</code>.
+          Repo is at <a href="https://github.com/catancs/spendwall">github.com/catancs/spendwall</a>. <code>brew install catancs/tap/spendwall</code>, <code>spendwall init</code>, <code>spendwall start</code>, <code>spendwall panel</code>, that's the whole onboarding for the local mode. SDKs are <code>pip install spendwall</code> and <code>npm install spendwall</code>.
         </p>
       </div>
 
@@ -302,11 +312,11 @@
         <h2>M1 closeout</h2>
 
         <p>
-          The release pipeline that was "ships binaries" by the morning's post now actually ships them. The npm provenance attestation was wrong &mdash; sigstore couldn't verify the package, so <code>npm install spendwall</code> failed for anyone who'd opted into <code>--require-provenance</code>. The Homebrew formula was landing in the tap repo's root rather than <code>Formula/</code>, so <code>brew install</code> didn't see it until I went looking. There was a saturating-arithmetic bug in the Stripe replay-window check that let a negative window slip through under specific clock skew; it's caught by tests now and the math is saturating at the boundary.
+          The release pipeline that was "ships binaries" by the morning's post now actually ships them. The npm provenance attestation was wrong, sigstore couldn't verify the package, so <code>npm install spendwall</code> failed for anyone who'd opted into <code>--require-provenance</code>. The Homebrew formula was landing in the tap repo's root rather than <code>Formula/</code>, so <code>brew install</code> didn't see it until I went looking. There was a saturating-arithmetic bug in the Stripe replay-window check that let a negative window slip through under specific clock skew; it's caught by tests now and the math is saturating at the boundary.
         </p>
 
         <p>
-          The Windows MSVC target got dropped from the release matrix &mdash; the supervisor-unit story (<code>launchd</code> on macOS, <code>systemd --user</code> on Linux) doesn't have a Windows equivalent I'm willing to ship yet, so distributing a binary nobody can run-as-a-service feels like worse-than-not-shipping. <code>cargo-deny</code> moved to running on the host rather than in a target-specific container, and the wildcard-version rule got softened so a transitive crate I don't control can't fail the release.
+          The Windows MSVC target got dropped from the release matrix, the supervisor-unit story (<code>launchd</code> on macOS, <code>systemd --user</code> on Linux) doesn't have a Windows equivalent I'm willing to ship yet, so distributing a binary nobody can run-as-a-service feels like worse-than-not-shipping. <code>cargo-deny</code> moved to running on the host rather than in a target-specific container, and the wildcard-version rule got softened so a transitive crate I don't control can't fail the release.
         </p>
 
         <p>
@@ -316,29 +326,29 @@
         <h2>M2: per-app caps via UDS peer credentials</h2>
 
         <p>
-          The thing I most wanted to do in M2. When an SDK call comes in over the Unix domain socket, Spendwall now captures peer credentials at <code>accept</code> time &mdash; PID, UID, executable path, derived app name. Each is attached as a request extension and persisted on every <code>spend_events</code> row alongside the existing <code>agent_id</code>. Caps can now scope by <em>which application is making the call</em>, not just by the <code>agent_id</code> the caller chose to send.
+          The thing I most wanted to do in M2. When an SDK call comes in over the Unix domain socket, Spendwall now captures peer credentials at <code>accept</code> time, PID, UID, executable path, derived app name. Each is attached as a request extension and persisted on every <code>spend_events</code> row alongside the existing <code>agent_id</code>. Caps can now scope by <em>which application is making the call</em>, not just by the <code>agent_id</code> the caller chose to send.
         </p>
 
         <p>
-          This matters because <code>agent_id</code> is self-reported. A misconfigured agent can claim to be anything; a compromised one definitely will. <code>peer_exe</code> can't lie &mdash; it's the actual binary the kernel sees on the other end of the socket. So you get a real ground-truth axis for attribution. The CLI surfaces it: <code>spendwall ls --by app|agent --since 1h|1d|7d|30d</code> shows actual spend per real binary. The panel groups by app instead of by self-declared agent.
+          This matters because <code>agent_id</code> is self-reported. A misconfigured agent can claim to be anything; a compromised one definitely will. <code>peer_exe</code> can't lie, it's the actual binary the kernel sees on the other end of the socket. So you get a real ground-truth axis for attribution. The CLI surfaces it: <code>spendwall ls --by app|agent --since 1h|1d|7d|30d</code> shows actual spend per real binary. The panel groups by app instead of by self-declared agent.
         </p>
 
         <p>
-          <strong>Curated peer-label table.</strong> Raw paths look bad in a UI. <code>~/.spendwall/labels.toml</code> ships seeded with mappings for the common LLM CLIs (<code>claude</code>, <code>codex</code>, <code>cursor</code>) and the obvious tool runners, so the panel shows "Claude Code" instead of <code>/Users/cata/.local/bin/claude</code>. Users extend it for their own binaries. The seed is deliberately conservative &mdash; if I'm not sure what something is, I'd rather show the path than guess wrong.
+          <strong>Curated peer-label table.</strong> Raw paths look bad in a UI. <code>~/.spendwall/labels.toml</code> ships seeded with mappings for the common LLM CLIs (<code>claude</code>, <code>codex</code>, <code>cursor</code>) and the obvious tool runners, so the panel shows "Claude Code" instead of <code>/Users/cata/.local/bin/claude</code>. Users extend it for their own binaries. The seed is deliberately conservative, if I'm not sure what something is, I'd rather show the path than guess wrong.
         </p>
 
         <h2>Tag redaction, mid-flight warnings, fail-closed</h2>
 
         <p>
-          <strong>Tag-value redaction.</strong> At the on-disk persistence boundary, configured tag values get redacted before they ever land in the audit ledger. The kind of thing compliance customers ask for in the first meeting &mdash; "what if my agent stuffs the customer email into the request body and we end up with an audit row containing PII?" Now the redactor runs between the proxy's audit-emit helper and the SQLite writer.
+          <strong>Tag-value redaction.</strong> At the on-disk persistence boundary, configured tag values get redacted before they ever land in the audit ledger. The kind of thing compliance customers ask for in the first meeting, "what if my agent stuffs the customer email into the request body and we end up with an audit row containing PII?" Now the redactor runs between the proxy's audit-emit helper and the SQLite writer.
         </p>
 
         <p>
-          <strong>Mid-flight 80% cap warnings.</strong> Parallel signal alongside hard enforcement. The proxy emits a <code>CapAlert</code> when an in-flight call would push usage past 80% of the cap; alerts route through the Slack/email pipeline that landed in week one. Catches cap creep before it becomes cap hit, which is what you actually want for the soft side of the budget conversation &mdash; you don't want every cap to feel like a wall, you want the wall to be the last warning, not the only one.
+          <strong>Mid-flight 80% cap warnings.</strong> Parallel signal alongside hard enforcement. The proxy emits a <code>CapAlert</code> when an in-flight call would push usage past 80% of the cap; alerts route through the Slack/email pipeline that landed in week one. Catches cap creep before it becomes cap hit, which is what you actually want for the soft side of the budget conversation, you don't want every cap to feel like a wall, you want the wall to be the last warning, not the only one.
         </p>
 
         <p>
-          <strong>Fail-closed-on-policy-unavailable.</strong> The fail-open default I argued for in week two stays. But there's now a config flag &mdash; <code>policy.fail_mode = "closed"</code> &mdash; that flips the behavior at the daemon level for compliance customers who explicitly want the opposite. Strict mode at the SDK edge plus fail-closed at the engine. The two overrides compose: strict callers get hard refusals when the engine is unavailable, lax callers fail-open or fail-closed depending on the daemon-level switch.
+          <strong>Fail-closed-on-policy-unavailable.</strong> The fail-open default I argued for in week two stays. But there's now a config flag (<code>policy.fail_mode = "closed"</code>) that flips the behavior at the daemon level for compliance customers who explicitly want the opposite. Strict mode at the SDK edge plus fail-closed at the engine. The two overrides compose: strict callers get hard refusals when the engine is unavailable, lax callers fail-open or fail-closed depending on the daemon-level switch.
         </p>
 
         <h2>Health and doctor</h2>
@@ -350,7 +360,7 @@
         <h2>Where this leaves things</h2>
 
         <p>
-          v0.0.9 ships the M2 work I cared most about. Cloud sync &mdash; the M3 milestone &mdash; hasn't started, and won't until the build-in-public alpha has run for long enough to know what the cloud half should actually do. As far as the local tool goes: feature-complete for the use cases I had in mind. Per-app attribution, per-app caps, tag redaction, mid-flight warnings, configurable fail mode, real health reporting, signed-and-published-and-installable.
+          v0.0.9 ships the M2 work I cared most about. Cloud sync (the M3 milestone) hasn't started, and won't until the build-in-public alpha has run for long enough to know what the cloud half should actually do. As far as the local tool goes: feature-complete for the use cases I had in mind. Per-app attribution, per-app caps, tag redaction, mid-flight warnings, configurable fail mode, real health reporting, signed-and-published-and-installable.
         </p>
 
         <p>
@@ -371,6 +381,8 @@
       </div>
     </div>
   </footer>
+
+  <script src="../theme.js"></script>
 
 </body>
 </html>
