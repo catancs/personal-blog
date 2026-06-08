@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vibe Mobile: a phone companion for Mistral's CLI agent – Catalin-Stefan Niculescu</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <meta name="theme-color" content="#f7fafa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c1f22" media="(prefers-color-scheme: dark)">
+  <script>(function(){try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+  <title>Vibe Mobile: a phone companion for Mistral's CLI agent - Catalin-Stefan Niculescu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -19,6 +23,12 @@
         <li><a href="../projects.html">Projects</a></li>
         <li><a href="../about.html">About</a></li>
         <li><a href="../contact.html">Contact</a></li>
+        <li class="nav-toggle-li">
+          <button type="button" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </li>
       </ul>
     </div>
   </nav>
@@ -37,15 +47,15 @@
     <div class="post-content">
 
       <p>
-        I've been using <a href="https://docs.mistral.ai/mistral-vibe/introduction">Mistral's Vibe CLI</a> for a while now. It's a coding agent that lives in your terminal: you point it at a project and it starts working &mdash; the same loop as Claude Code or Codex, but Mistral's take on it.
+        I've been using <a href="https://docs.mistral.ai/mistral-vibe/introduction">Mistral's Vibe CLI</a> for a while now. It's a coding agent that lives in your terminal: you point it at a project and it starts working, the same loop as Claude Code or Codex, but Mistral's take on it.
       </p>
 
       <p>
-        The pattern that kept biting me: the agent runs for a long time. It plans, edits a file, runs the test suite, hits a permission prompt, waits. Sometimes I'm at my desk and that's fine. Often I'm not &mdash; I stepped out for coffee, I'm cooking, I'm halfway across the room &mdash; and the agent is just sitting there, blocked on me, until I come back.
+        The pattern that kept biting me: the agent runs for a long time. It plans, edits a file, runs the test suite, hits a permission prompt, waits. Sometimes I'm at my desk and that's fine. Often I'm not, I stepped out for coffee, I'm cooking, I'm halfway across the room, and the agent is just sitting there, blocked on me, until I come back.
       </p>
 
       <p>
-        Anthropic shipped Dispatch &mdash; pair your phone to your desktop Claude session, hand off tasks, watch them run. OpenAI has the Codex web companion. Cursor, GitHub, Replit &mdash; every US lab has wired their CLI agent to a phone or a browser so you can babysit it from anywhere.
+        Anthropic shipped Dispatch, pair your phone to your desktop Claude session, hand off tasks, watch them run. OpenAI has the Codex web companion. Cursor, GitHub, Replit, every US lab has wired their CLI agent to a phone or a browser so you can babysit it from anywhere.
       </p>
 
       <p>
@@ -71,7 +81,7 @@
 <pre><code>iPhone  ←  Socket.IO  →  Relay Server  ←  Socket.IO  →  Desktop Agent  →  vibe-acp</code></pre>
 
       <p>
-        <code>packages/desktop-agent</code> is a tiny Node CLI you start in your project directory. It spawns <code>vibe-acp</code> (Mistral's agent over the Agent Client Protocol) and forwards everything to the relay. <code>packages/relay-server</code> is a Fastify + Socket.IO server with PostgreSQL behind it &mdash; the only piece with a public address, so the phone and desktop don't need to find each other on the network. <code>packages/mobile</code> is the Expo iOS app. <code>packages/wire</code> is the shared TypeScript package that defines every message that flies over the wire so the three runtimes can't disagree about the schema.
+        <code>packages/desktop-agent</code> is a tiny Node CLI you start in your project directory. It spawns <code>vibe-acp</code> (Mistral's agent over the Agent Client Protocol) and forwards everything to the relay. <code>packages/relay-server</code> is a Fastify + Socket.IO server with PostgreSQL behind it, the only piece with a public address, so the phone and desktop don't need to find each other on the network. <code>packages/mobile</code> is the Expo iOS app. <code>packages/wire</code> is the shared TypeScript package that defines every message that flies over the wire so the three runtimes can't disagree about the schema.
       </p>
 
       <p>
@@ -97,7 +107,7 @@
       </p>
 
       <p>
-        When the desktop agent starts a session it generates a random 32-byte AES key &mdash; the <strong>data key</strong>. This is the only key that can read the session's messages. The phone has its own X25519 keypair stored on-device; its public key reaches the desktop agent through the QR code at pairing time. The desktop then wraps the data key for the phone using libsodium's <code>crypto_box_seal</code> &mdash; a sealed-box construction over X25519 &mdash; and the wrapped key travels through the relay to the phone, which unwraps it locally with its secret key.
+        When the desktop agent starts a session it generates a random 32-byte AES key, the <strong>data key</strong>. This is the only key that can read the session's messages. The phone has its own X25519 keypair stored on-device; its public key reaches the desktop agent through the QR code at pairing time. The desktop then wraps the data key for the phone using libsodium's <code>crypto_box_seal</code> (a sealed-box construction over X25519), and the wrapped key travels through the relay to the phone, which unwraps it locally with its secret key.
       </p>
 
       <p>
@@ -161,7 +171,7 @@
           <text x="310" y="248" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="12" fill="#0B2E33">version || nonce(12) || ciphertext+tag</text>
           <text x="310" y="270" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="9.5" fill="#4F7C82" font-style="italic">everything the relay ever holds, base64-encoded</text>
         </svg>
-        <figcaption class="post-diagram-caption">Blind relay &mdash; plaintext lives only on the two endpoints; the relay's database can leak without leaking the messages.</figcaption>
+        <figcaption class="post-diagram-caption">Blind relay, plaintext lives only on the two endpoints; the relay's database can leak without leaking the messages.</figcaption>
       </figure>
 
       <p>
@@ -169,7 +179,7 @@
       </p>
 
       <p>
-        The surface that remains is metadata &mdash; session IDs, timestamps, message sizes. That's the honest answer. If you need even that surface gone, the relay is small enough that you can self-host it on Fly or Railway, set <code>DATABASE_URL</code> and <code>AUTH_SECRET</code>, and call it a day.
+        The surface that remains is metadata, session IDs, timestamps, message sizes. That's the honest answer. If you need even that surface gone, the relay is small enough that you can self-host it on Fly or Railway, set <code>DATABASE_URL</code> and <code>AUTH_SECRET</code>, and call it a day.
       </p>
 
       <h2>Where it is right now</h2>
@@ -194,7 +204,7 @@ pnpm dev:agent /path/to/your/project  # in another</code></pre>
       <h2>Why I'm sharing this</h2>
 
       <p>
-        The story of CLI-first AI tooling has been written almost entirely in California &mdash; the companions, the dashboards, the mobile apps, the cloud-coding web UIs all came from labs in San Francisco, all aimed at their own models. I think it's worth one of those existing for Mistral too, ideally written by someone who actually uses Vibe and lives a flight away from Paris.
+        The story of CLI-first AI tooling has been written almost entirely in California, the companions, the dashboards, the mobile apps, the cloud-coding web UIs all came from labs in San Francisco, all aimed at their own models. I think it's worth one of those existing for Mistral too, ideally written by someone who actually uses Vibe and lives a flight away from Paris.
       </p>
 
       <p>
@@ -218,6 +228,8 @@ pnpm dev:agent /path/to/your/project  # in another</code></pre>
       </div>
     </div>
   </footer>
+
+  <script src="../theme.js"></script>
 
 </body>
 </html>

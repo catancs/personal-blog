@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JobTracker: a job hunt dashboard built in an evening – Catalin-Stefan Niculescu</title>
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <meta name="theme-color" content="#f7fafa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c1f22" media="(prefers-color-scheme: dark)">
+  <script>(function(){try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+  <title>JobTracker: a job hunt dashboard built in an evening - Catalin-Stefan Niculescu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -19,6 +23,12 @@
         <li><a href="../projects.html">Projects</a></li>
         <li><a href="../about.html">About</a></li>
         <li><a href="../contact.html">Contact</a></li>
+        <li class="nav-toggle-li">
+          <button type="button" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </li>
       </ul>
     </div>
   </nav>
@@ -40,17 +50,17 @@
         <div class="post-week-label">Day 1 &middot; 4 March 2026</div>
 
         <p>
-          My girlfriend has spent the last few weeks trying to land an entry-level legal role in the Netherlands &mdash; junior counsel, compliance internship, legal trainee, the same handful of titles in slightly different combinations. The actual search part isn't the hard bit. The hard bit is tracking forty-something postings across LinkedIn, Indeed, and Glassdoor in a spreadsheet she keeps rewriting. So this evening I sat down to build her something better.
+          My girlfriend has spent the last few weeks trying to land an entry-level legal role in the Netherlands, junior counsel, compliance internship, legal trainee, the same handful of titles in slightly different combinations. The actual search part isn't the hard bit. The hard bit is tracking forty-something postings across LinkedIn, Indeed, and Glassdoor in a spreadsheet she keeps rewriting. So this evening I sat down to build her something better.
         </p>
 
         <p>
-          The shape of it is one I've reached for a few times before: FastAPI on the backend talking to Mongo, a React + Vite + Tailwind frontend with shadcn primitives and React Query for state, a Kanban view backing a triage inbox. The point of writing this post isn't the stack &mdash; it's the choices that are specific to the problem she's actually solving.
+          The shape of it is one I've reached for a few times before: FastAPI on the backend talking to Mongo, a React + Vite + Tailwind frontend with shadcn primitives and React Query for state, a Kanban view backing a triage inbox. The point of writing this post isn't the stack, it's the choices that are specific to the problem she's actually solving.
         </p>
 
         <h2>The core UX</h2>
 
         <p>
-          What she actually needs is a fast triage loop. Open the app, see new postings, decide quickly whether each one is worth applying to, move on. So the inbox is split-pane (30/70 &mdash; posting list on the left, detail on the right) and keyboard-driven: <code>X</code> rejects the current job and auto-advances, <code>S</code> shortlists it, <code>A</code> marks it as applied, <code>J</code>/<code>K</code> navigate up and down without taking your hand off the keyboard. The Kanban view is drag-and-drop via <code>@dnd-kit</code> &mdash; <code>DndContext</code> with sortable cards, droppable columns, a drag overlay for visual feedback, and a status update fired on drop.
+          What she actually needs is a fast triage loop. Open the app, see new postings, decide quickly whether each one is worth applying to, move on. So the inbox is split-pane (30/70, posting list on the left, detail on the right) and keyboard-driven: <code>X</code> rejects the current job and auto-advances, <code>S</code> shortlists it, <code>A</code> marks it as applied, <code>J</code>/<code>K</code> navigate up and down without taking your hand off the keyboard. The Kanban view is drag-and-drop via <code>@dnd-kit</code>, <code>DndContext</code> with sortable cards, droppable columns, a drag overlay for visual feedback, and a status update fired on drop.
         </p>
 
         <p>
@@ -60,7 +70,7 @@
         <h2>Stitching the deployment together</h2>
 
         <p>
-          This is where the evening got long. The thing was supposed to live on Koyeb's hobby tier, which means a strict memory quota that doesn't accommodate two separate services for the frontend and the backend. So the deploy story converged on a single container: the React build runs in a <code>oven/bun:1-slim</code> stage, the output gets copied into <code>/app/static</code>, and FastAPI serves both the API and the SPA &mdash; <code>StaticFiles</code> mounted at <code>/assets</code> and a catch-all <code>GET /{full_path:path}</code> route returning <code>index.html</code> for everything else.
+          This is where the evening got long. The thing was supposed to live on Koyeb's hobby tier, which means a strict memory quota that doesn't accommodate two separate services for the frontend and the backend. So the deploy story converged on a single container: the React build runs in a <code>oven/bun:1-slim</code> stage, the output gets copied into <code>/app/static</code>, and FastAPI serves both the API and the SPA, <code>StaticFiles</code> mounted at <code>/assets</code> and a catch-all <code>GET /{full_path:path}</code> route returning <code>index.html</code> for everything else.
         </p>
 
         <p>
@@ -84,17 +94,17 @@
         </p>
 
         <p>
-          <strong>Background pool auth errors.</strong> Atlas with <code>minPoolSize=1</code> was reconnecting in the background on every idle reap and spitting auth warnings into the logs even on healthy traffic. Setting <code>minPoolSize=0</code> made the warnings disappear &mdash; the connections still open on demand, they just don't get held warm.
+          <strong>Background pool auth errors.</strong> Atlas with <code>minPoolSize=1</code> was reconnecting in the background on every idle reap and spitting auth warnings into the logs even on healthy traffic. Setting <code>minPoolSize=0</code> made the warnings disappear, the connections still open on demand, they just don't get held warm.
         </p>
 
         <p>
-          <strong>Invalid TLS flags.</strong> My initial Mongo client config had <code>tlsAllowInvalidCertificates=True</code> and <code>tlsAllowInvalidHostnames=True</code> set &mdash; Atlas refuses both outright. Removed both.
+          <strong>Invalid TLS flags.</strong> My initial Mongo client config had <code>tlsAllowInvalidCertificates=True</code> and <code>tlsAllowInvalidHostnames=True</code> set, Atlas refuses both outright. Removed both.
         </p>
 
         <h2>The fetcher</h2>
 
         <p>
-          The interesting layer. Pulling jobs from LinkedIn, Indeed, and Glassdoor isn't hard &mdash; <a href="https://github.com/Bunsly/JobSpy">JobSpy</a> handles all three behind one interface. Getting back <em>only the postings that are actually relevant to her</em> is the part that took thought.
+          The interesting layer. Pulling jobs from LinkedIn, Indeed, and Glassdoor isn't hard, <a href="https://github.com/Bunsly/JobSpy">JobSpy</a> handles all three behind one interface. Getting back <em>only the postings that are actually relevant to her</em> is the part that took thought.
         </p>
 
         <p>
@@ -137,7 +147,7 @@
             <rect x="130" y="284" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
             <text x="310" y="308" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Fuzzy dedup</text>
             <text x="310" y="327" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">rapidfuzz title 85 / company 90</text>
-            <text x="500" y="317" font-family="'JetBrains Mono', monospace" font-size="11" fill="#4F7C82" font-weight="600">&minus;1&ndash;2</text>
+            <text x="500" y="317" font-family="'JetBrains Mono', monospace" font-size="11" fill="#4F7C82" font-weight="600">&minus;1-2</text>
 
             <line x1="310" y1="344" x2="310" y2="370" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#jt-arr)"/>
 
@@ -145,9 +155,9 @@
             <rect x="130" y="372" width="360" height="58" rx="6" fill="rgba(79, 124, 130, 0.10)" stroke="#4F7C82" stroke-width="1.5"/>
             <text x="310" y="396" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Triage inbox</text>
             <text x="310" y="415" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">X &middot; S &middot; A &middot; J &middot; K</text>
-            <text x="500" y="405" font-family="'JetBrains Mono', monospace" font-size="11" fill="#0B2E33" font-weight="600">4&ndash;8 surfaced</text>
+            <text x="500" y="405" font-family="'JetBrains Mono', monospace" font-size="11" fill="#0B2E33" font-weight="600">4-8 surfaced</text>
           </svg>
-          <figcaption class="post-diagram-caption">Fetcher pipeline &mdash; what survives between the upstream APIs and the morning triage queue.</figcaption>
+          <figcaption class="post-diagram-caption">Fetcher pipeline, what survives between the upstream APIs and the morning triage queue.</figcaption>
         </figure>
 
         <p>
@@ -155,7 +165,7 @@
         </p>
 
         <p>
-          <strong>Seniority.</strong> Search queries are tuned for junior roles ("junior legal counsel", "legal internship", "compliance trainee"), but senior postings leak through anything that mentions <em>legal</em> or <em>counsel</em>. A regex over the title catches the obvious cases &mdash; <code>senior</code>, <code>sr.</code>, <code>lead</code>, <code>principal</code>, <code>head of</code>, <code>director</code>, <code>manager</code>, <code>VP</code>, <code>chief</code>, <code>counsel II</code> &mdash; with word boundaries that took more iteration than I expected because "leadership" should not match <code>lead</code> and "managerial" should not match <code>manager</code>. The description gets a separate pass for experience requirements: <code>([3-9]|\d{2,})\s*\+?\s*years?</code> with Dutch and "minimum of" variants. Anything that trips either check gets dropped.
+          <strong>Seniority.</strong> Search queries are tuned for junior roles ("junior legal counsel", "legal internship", "compliance trainee"), but senior postings leak through anything that mentions <em>legal</em> or <em>counsel</em>. A regex over the title catches the obvious cases (<code>senior</code>, <code>sr.</code>, <code>lead</code>, <code>principal</code>, <code>head of</code>, <code>director</code>, <code>manager</code>, <code>VP</code>, <code>chief</code>, <code>counsel II</code>) with word boundaries that took more iteration than I expected because "leadership" should not match <code>lead</code> and "managerial" should not match <code>manager</code>. The description gets a separate pass for experience requirements: <code>([3-9]|\d{2,})\s*\+?\s*years?</code> with Dutch and "minimum of" variants. Anything that trips either check gets dropped.
         </p>
 
         <p>
@@ -179,7 +189,7 @@
         <div class="post-week-label">Day 8 &middot; 12 March 2026</div>
 
         <p>
-          A week of real use. She'd put roughly forty postings through the pipeline; eight had been applied to, two were already at first-stage interviews. The thing that surfaced now wasn't a bug &mdash; it was that <em>volume changes what you want to see</em>. With forty rows in the inbox you want to find the one good posting. With four hundred you want to understand the <em>shape</em> of where you're spending energy.
+          A week of real use. She'd put roughly forty postings through the pipeline; eight had been applied to, two were already at first-stage interviews. The thing that surfaced now wasn't a bug, it was that <em>volume changes what you want to see</em>. With forty rows in the inbox you want to find the one good posting. With four hundred you want to understand the <em>shape</em> of where you're spending energy.
         </p>
 
         <h2>Three new pages</h2>
@@ -193,7 +203,7 @@
         </p>
 
         <p>
-          <strong>Visual Progress.</strong> A heatmap of applications by date (calendar-style, GitHub-contributions shape), a tag cloud of skills extracted from descriptions, and a list of companies by location. The heatmap is the one I keep coming back to &mdash; activity is bursty in a job hunt, and seeing the bursts mapped to the calendar makes it easier to spot whether a flat week was a deliberate break or accidental drift.
+          <strong>Visual Progress.</strong> A heatmap of applications by date (calendar-style, GitHub-contributions shape), a tag cloud of skills extracted from descriptions, and a list of companies by location. The heatmap is the one I keep coming back to, activity is bursty in a job hunt, and seeing the bursts mapped to the calendar makes it easier to spot whether a flat week was a deliberate break or accidental drift.
         </p>
 
         <h2>CI/CD finally</h2>
@@ -203,7 +213,7 @@
         </p>
 
         <p>
-          While I was in there I noticed the backend was listening on port <code>8400</code> in the combined image, which the Koyeb health-checker was hitting at <code>8000</code>. Two-line Dockerfile fix. Also dropped supervisord from the combined image entirely &mdash; with no Celery worker to supervise it was just one more process to crash on boot &mdash; and called <code>uvicorn</code> directly as the container's <code>CMD</code>.
+          While I was in there I noticed the backend was listening on port <code>8400</code> in the combined image, which the Koyeb health-checker was hitting at <code>8000</code>. Two-line Dockerfile fix. Also dropped supervisord from the combined image entirely (with no Celery worker to supervise it was just one more process to crash on boot), and called <code>uvicorn</code> directly as the container's <code>CMD</code>.
         </p>
       </div>
 
@@ -235,7 +245,7 @@
     repo.insert(job)</code></pre>
 
         <p>
-          The <code>continue</code> resumes the <em>inner</em> loop &mdash; not the outer one. So when a similar job is found, the inner loop keeps walking other candidates, eventually exits naturally, and then <code>repo.insert(job)</code> runs anyway. That part was fine. The bug was elsewhere: <code>find_similar_jobs</code> was over-fetching candidates and the similarity key was so aggressively normalised that <em>every job looked similar to every other job</em>. Specifically, the slug function was stripping the words <code>junior</code>, <code>intern</code>, <code>internship</code>, <code>trainee</code>, <code>graduate</code> as "noise words that vary across postings" &mdash; which meant "Junior Legal Counsel at Booking" and "Legal Counsel Intern at Booking" collapsed to the same key. And once any candidate matched the title-similarity threshold, the existing dedup decision was wrong and the new job got dropped.
+          The <code>continue</code> resumes the <em>inner</em> loop, not the outer one. So when a similar job is found, the inner loop keeps walking other candidates, eventually exits naturally, and then <code>repo.insert(job)</code> runs anyway. That part was fine. The bug was elsewhere: <code>find_similar_jobs</code> was over-fetching candidates and the similarity key was so aggressively normalised that <em>every job looked similar to every other job</em>. Specifically, the slug function was stripping the words <code>junior</code>, <code>intern</code>, <code>internship</code>, <code>trainee</code>, <code>graduate</code> as "noise words that vary across postings", which meant "Junior Legal Counsel at Booking" and "Legal Counsel Intern at Booking" collapsed to the same key. And once any candidate matched the title-similarity threshold, the existing dedup decision was wrong and the new job got dropped.
         </p>
 
         <p>
@@ -249,7 +259,7 @@
         <h2>The Dutch-filter false positives</h2>
 
         <p>
-          While I was in there, a second class of bug. The Dutch stopwords list had English words on it. <code>je</code>, <code>we</code>, <code>wij</code>, <code>werk</code>, <code>stage</code>. The most damaging was <code>stage</code> &mdash; it's a Dutch word for "internship", but it's also the English word for, well, <em>stage</em>. Every English posting that mentioned "early-stage company" or "stage three of the interview process" was being counted as Dutch and dropped.
+          While I was in there, a second class of bug. The Dutch stopwords list had English words on it. <code>je</code>, <code>we</code>, <code>wij</code>, <code>werk</code>, <code>stage</code>. The most damaging was <code>stage</code>, it's a Dutch word for "internship", but it's also the English word for, well, <em>stage</em>. Every English posting that mentioned "early-stage company" or "stage three of the interview process" was being counted as Dutch and dropped.
         </p>
 
         <p>
@@ -257,13 +267,13 @@
         </p>
 
         <p>
-          Same evening: the experience-requirement regex was scanning only the first 1500 characters of the description &mdash; presumably written that way to keep the regex fast &mdash; and missing "minimum 5 years of experience required" clauses that sat in the requirements section near the bottom. Removed the slice, ran on the full description, no measurable performance impact.
+          Same evening: the experience-requirement regex was scanning only the first 1500 characters of the description (presumably written that way to keep the regex fast), and missing "minimum 5 years of experience required" clauses that sat in the requirements section near the bottom. Removed the slice, ran on the full description, no measurable performance impact.
         </p>
 
         <h2>Entry-level scoring</h2>
 
         <p>
-          A boolean "is this entry-level or not" filter is too blunt &mdash; the postings that survive still vary wildly in how junior-friendly they actually are. Added an <code>_entry_level_score</code> function that walks the title and description and returns a 0&ndash;100 score: +15 for <code>junior</code>/<code>jr</code> in the title, +20 for <code>intern</code>/<code>internship</code>/<code>stage</code>, +15 for <code>trainee</code>/<code>graduate</code>/<code>entry-level</code>, &minus;15 per "N+ years experience" mention, &minus;20 for senior/lead/principal/staff terms. Clamped to [0, 100]. Stored on the job document so the inbox can sort by it.
+          A boolean "is this entry-level or not" filter is too blunt, the postings that survive still vary wildly in how junior-friendly they actually are. Added an <code>_entry_level_score</code> function that walks the title and description and returns a 0-100 score: +15 for <code>junior</code>/<code>jr</code> in the title, +20 for <code>intern</code>/<code>internship</code>/<code>stage</code>, +15 for <code>trainee</code>/<code>graduate</code>/<code>entry-level</code>, &minus;15 per "N+ years experience" mention, &minus;20 for senior/lead/principal/staff terms. Clamped to [0, 100]. Stored on the job document so the inbox can sort by it.
         </p>
 
         <p>
@@ -289,7 +299,7 @@
         </p>
 
         <p>
-          <strong>Email reminder service.</strong> A background scheduler that scans applied jobs older than fourteen days with no status update and sends a daily digest reminder. The toast notification on the Applied Jobs page surfaces the same thing in-app: "you applied to X 16 days ago, nothing's moved, maybe follow up." It's the one feature I added that's purely behavioural rather than technical &mdash; the bottleneck on her hunt isn't finding jobs, it's remembering to chase the ones already in flight.
+          <strong>Email reminder service.</strong> A background scheduler that scans applied jobs older than fourteen days with no status update and sends a daily digest reminder. The toast notification on the Applied Jobs page surfaces the same thing in-app: "you applied to X 16 days ago, nothing's moved, maybe follow up." It's the one feature I added that's purely behavioural rather than technical, the bottleneck on her hunt isn't finding jobs, it's remembering to chase the ones already in flight.
         </p>
 
         <h2>Where it stands</h2>
@@ -299,11 +309,11 @@
         </p>
 
         <p>
-          The repo is at <a href="https://github.com/catancs/job-application-dashboard">github.com/catancs/job-application-dashboard</a>. The README has a full local-setup walk-through &mdash; <code>docker compose up</code> brings up Mongo, Redis, the backend, and the frontend on a single command if you want to try it. The deployed version is keyed to her search; the open-source version is generic and the entry-level / Dutch-filter logic is plain enough Python that retargeting it to a different country or seniority band is a config change rather than a rewrite.
+          The repo is at <a href="https://github.com/catancs/job-application-dashboard">github.com/catancs/job-application-dashboard</a>. The README has a full local-setup walk-through, <code>docker compose up</code> brings up Mongo, Redis, the backend, and the frontend on a single command if you want to try it. The deployed version is keyed to her search; the open-source version is generic and the entry-level / Dutch-filter logic is plain enough Python that retargeting it to a different country or seniority band is a config change rather than a rewrite.
         </p>
 
         <p>
-          Next post on this one will be when something more interesting goes wrong &mdash; or, ideally, when she has an offer to consider.
+          Next post on this one will be when something more interesting goes wrong, or, ideally, when she has an offer to consider.
         </p>
       </div>
 
@@ -320,6 +330,8 @@
       </div>
     </div>
   </footer>
+
+  <script src="../theme.js"></script>
 
 </body>
 </html>
