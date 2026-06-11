@@ -168,6 +168,20 @@
         The fix wasn't a patch. It was the architecture in the diagram above. I ripped the decision out of placement entirely and made placement dumb and pure, and moved every formatting decision into the resolution function where it can see the whole finished history. The bug that the fuzzer found is what forced the design into its correct, cleaner shape. I'd have shipped the subtly-broken version without it.
       </p>
 
+      <h2>The payoff: merging paragraphs came almost for free</h2>
+
+      <p>
+        There's a moment in a project like this where the architecture starts paying you back, and for me it was paragraph merging. Splitting a paragraph was easy from the start: a paragraph break is just another zero-width marker dropped into the sequence. But the opposite, merging two paragraphs back into one by deleting that break, is the kind of thing that turns ugly in a naive design. You're removing a structural boundary while other people might be typing on either side of it.
+      </p>
+
+      <p>
+        In the split-brain version of this problem you reach for special cases. In the decomposed version it barely counted as work. Deleting a boundary is just one more operation that tombstones a marker by its identity, and the resolution function already knows how to ignore a tombstoned marker. So the boundary disappears, the text on both sides falls into a single block, and the merged block keeps the type of the paragraph that came before it. Every bit of that is resolution doing exactly what it already did, with nothing new to teach it. I added the op, wired up a backspace-at-the-start-of-a-paragraph helper and a delete-across-a-boundary one, taught the fuzzer to generate merges too, and it stayed green across the same hundred-thousand-plus concurrent histories.
+      </p>
+
+      <p>
+        That's the part of decomposition nobody warns you about. The first feature costs you the entire architecture. Every feature after it is suspiciously cheap.
+      </p>
+
       <h2>Evidence over assertions</h2>
 
       <p>
