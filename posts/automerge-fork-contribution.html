@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <meta name="theme-color" content="#f7fafa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c1f22" media="(prefers-color-scheme: dark)">
+  <script>(function(){try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+  <title>A first pull request to Automerge - Catalin-Stefan Niculescu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <nav>
+    <div class="container">
+      <a href="../index.html" class="nav-name">catalin niculescu</a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../projects.html">Projects</a></li>
+        <li><a href="../about.html">About</a></li>
+        <li><a href="../contact.html">Contact</a></li>
+        <li class="nav-toggle-li">
+          <button type="button" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <h1 style="font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 0.5rem;">A first pull request to Automerge</h1>
+
+    <div class="post-meta">
+      <span>11 June 2026</span>
+      <a href="https://github.com/automerge/automerge/pull/1405" target="_blank" rel="noopener">View the PR &rarr;</a>
+    </div>
+
+    <div class="post-content">
+
+      <p>
+        The last thing I wrote here was about <a href="eg-walker-richtext.html">a rich-text CRDT</a> that started life as a chapter in Martin Kleppmann's database book and ended with me accidentally reinventing an award-winning algorithm. I thought that was the end of the thread. It wasn't. Pulling on one curiosity has a way of fraying into three more, and one of those loose ends turned into the small thing I want to write about now: my first pull request to <a href="https://github.com/automerge/automerge" target="_blank" rel="noopener">Automerge</a>.
+      </p>
+
+      <p>
+        It happened the way these things usually do. While I was buried in Eg-walker papers and CRDT benchmarks, Kleppmann's name kept surfacing, and his projects with it. One of them was Automerge, a library I'd been quietly leaning on as a mental reference point the whole time without ever having opened the hood. It's a serious piece of work: a JSON-like data structure that several people can edit at once and merge back together automatically, with a compact binary format and a sync protocol underneath. The tagline they use is "PostgreSQL for your local-first app," and that's roughly the ambition. A core written in Rust, compiled to WebAssembly, wrapped for JavaScript and C. Maintained out of Ink &amp; Switch.
+      </p>
+
+      <h2>Wanting to give something back</h2>
+
+      <p>
+        Spending weeks inside this corner of computing and taking so much from it, the papers, the reference designs, the libraries I measured my own toy against, left me wanting to put something back in the other direction, however small. So I did the unglamorous thing first. I read the contributing notes, I read the open issues, and I went looking specifically for the future-work list, the stuff the maintainers have flagged but haven't gotten to.
+      </p>
+
+      <p>
+        Most of what I found was deep core work, the kind of thing where a careless change quietly costs you a 19x performance regression and three days of someone else's time. Not where a newcomer should be making his first move. But tucked in among the issues was a much friendlier one: a list of command-line tools the project knows it's missing, sitting in an <code>IDEAS.md</code> file that had been there for years. Forking a document at a particular point in its history. Diffing two documents. Getting and setting values by path from the terminal. None of it built yet.
+      </p>
+
+      <p>
+        That was the right size. Self-contained, genuinely wanted, and far enough from the delicate parts that I could be confident I wasn't breaking anything subtle. I picked the one that mapped most cleanly onto machinery that already existed: <code>fork</code>.
+      </p>
+
+      <h2>The change itself</h2>
+
+      <p>
+        The honest description is that this is a small contribution, and I'd rather say that plainly than dress it up. <code>fork</code> takes a document and a change hash and produces a new document as it existed at that point in history. The reason it was a good first pick is that the core library already knows how to do the hard part, <code>fork_at</code> is right there in the Rust API. The CLI just didn't expose it. So the work was mostly plumbing done carefully: read from a file or standard input, write to a file or standard output, reuse the verification flag the other commands already use, and fail with a clear message when someone hands it a hash that doesn't exist instead of producing a broken file.
+      </p>
+
+      <p>
+        While I was in there I found a small piece of dead code: an old command file that referred to an internal API the project had removed long ago. It couldn't compile, nothing referenced it, and it was the only reason two dependencies were still being pulled in. So the pull request deletes it and drops those dependencies, in its own separate commit so it's easy to see and easy to reason about. The net result is a change that adds a feature and removes more lines than it adds, which is my favourite shape for a patch.
+      </p>
+
+      <h2>The part I actually cared about</h2>
+
+      <p>
+        If the last project taught me anything it's that the discipline matters more than the code. I'm building all of this by orchestrating agents, and the entire risk of that way of working is accepting a green checkmark you haven't earned. So I held this to the same standard, even though it's a fraction of the size.
+      </p>
+
+      <p>
+        I built it from a clean baseline so I could prove nothing was broken before I touched it. I wrote integration tests that drive the actual compiled binary: fork at an earlier point and confirm the later edits are gone, fork at the latest point and confirm everything's still there, fork at a hash that isn't in the document and confirm it refuses to write anything. I ran the formatter and the linter the project's own CI runs, and got them clean. And I split the work into three commits, each touching one thing, with messages that explain <em>why</em> rather than <em>what</em>, because that's what the contributing guide asks for and because the next person to read <code>git blame</code> deserves it. None of that is heroic. It's just the difference between offering someone tidy work and offering them homework.
+      </p>
+
+      <h2>Where it stands</h2>
+
+      <p>
+        The pull request is <a href="https://github.com/automerge/automerge/pull/1405" target="_blank" rel="noopener">open</a>, and before opening it I left a note on the relevant issue saying which piece I was taking and that I was deliberately scoping it to just <code>fork</code> rather than bundling in the diff and get/set commands, which are bigger and deserve their own attention. Now I wait. The maintainers are two people doing this largely full-time alongside a community, and a first-time contributor's PR sits behind a manual approval before the test suite even runs, which is a perfectly reasonable thing to gate on. They might merge it, they might ask me to change the shape of it, they might point out something I missed. Any of those is a fine outcome. I'll update this if and when it lands.
+      </p>
+
+      <p>
+        Mostly I wanted to mark the moment, because there's a neat symmetry to it. A database textbook sent me down a rabbit hole that ended with me reinventing one of its author's algorithms by accident. The same rabbit hole has now ended with me opening a small pull request against another of his projects, on purpose this time. Taking ideas from people you admire is easy. Trying to hand a little something back, even something this modest, feels like the better end of the deal.
+      </p>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>&copy; 2026 Catalin-Stefan Niculescu</span>
+      <div class="footer-links">
+        <a href="https://github.com/catancs" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.linkedin.com/in/catalin-stefan-niculescu-9aa531197/" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../theme.js"></script>
+
+</body>
+</html>
