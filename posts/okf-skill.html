@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <meta name="theme-color" content="#f7fafa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c1f22" media="(prefers-color-scheme: dark)">
+  <script>(function(){try{var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+  <title>okf-skill: teaching agents to use the Open Knowledge Format - Catalin-Stefan Niculescu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <nav>
+    <div class="container">
+      <a href="../index.html" class="nav-name">catalin niculescu</a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../projects.html">Projects</a></li>
+        <li><a href="../about.html">About</a></li>
+        <li><a href="../contact.html">Contact</a></li>
+        <li class="nav-toggle-li">
+          <button type="button" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <a href="../index.html" class="post-back">&larr; Back to home</a>
+
+    <h1 style="font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 0.5rem;">okf-skill: teaching agents to use the Open Knowledge Format</h1>
+
+    <div class="post-meta">
+      <span>17 June 2026</span>
+      <a href="https://github.com/catancs/okf-skill" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+    </div>
+
+    <div class="post-content">
+
+      <p>
+        Google released the <a href="https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing">Open Knowledge Format</a> last week. It's a simple spec: knowledge lives as markdown files with YAML frontmatter, organized in directories, cross-linked. The kind of thing you'd build anyway if you were storing context for an agent, except now there's a spec so everyone's wiki looks the same.
+      </p>
+
+      <p>
+        Andrej Karpathy described the pattern a couple months earlier in his <a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f">LLM wiki gist</a>. The idea: instead of RAG, where the model rediscovers knowledge from scratch on every question, you have the agent maintain a persistent wiki of markdown files. The knowledge compounds. Google took that pattern and formalized it into a portable, interoperable format.
+      </p>
+
+      <p>
+        But here's the thing. The format is just a convention. What makes it useful is when agents actually <em>use</em> it. I wanted my coding agent to default to producing OKF bundles when documenting systems, and to read existing bundles for context. Not because I told it to every time, but because it's how the agent thinks about knowledge by default.
+      </p>
+
+      <p>
+        So I built <strong>okf-skill</strong>, a Claude Code skill that makes agents use OKF naturally.
+      </p>
+
+      <h2>The problem</h2>
+
+      <p>
+        When I ask an agent to document a database, it writes markdown. Random markdown. No frontmatter, no cross-links, no structure. Next time I open a different agent session, it starts from scratch. The knowledge I built up is gone.
+      </p>
+
+      <p>
+        OKF solves this by giving knowledge a structure. Every concept has a type, a title, a description. Concepts link to each other. Index files let agents navigate progressively. It's the difference between a pile of notes and an actual knowledge base.
+      </p>
+
+      <p>
+        But an agent won't use OKF unless you teach it the spec. And the spec, while short, is the kind of thing an agent needs to see <em>before</em> it starts working, not after. That's what the skill does.
+      </p>
+
+      <h2>What it does</h2>
+
+      <p>
+        The whole thing is one file: <code>skills/okf/SKILL.md</code>. It tells the agent the OKF conventions: what the frontmatter structure looks like, which fields are required, how to cross-link, how to organize directories, when to create index files. The agent reads it once and then produces conformant bundles from then on.
+      </p>
+
+      <p>
+        Ask the agent to document your Postgres database, and it creates an OKF bundle: a directory with <code>index.md</code> at root, subdirectories for datasets and tables, each concept file with typed frontmatter, cross-linked to related concepts, timestamped. Not because you asked for frontmatter specifically. Because that's how the agent now documents things.
+      </p>
+
+      <figure class="post-diagram">
+        <svg viewBox="0 0 620 372" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="How okf-skill changes agent behavior: the skill file teaches conventions, the agent produces structured knowledge.">
+          <defs>
+            <marker id="okf-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#4F7C82"/>
+            </marker>
+          </defs>
+
+          <!-- Input -->
+          <rect x="130" y="20" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="44" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">"Document my orders table"</text>
+          <text x="310" y="63" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">natural language request</text>
+
+          <line x1="310" y1="80" x2="310" y2="106" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#okf-arr)"/>
+
+          <!-- Skill -->
+          <rect x="130" y="108" width="360" height="58" rx="6" fill="rgba(79, 124, 130, 0.10)" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="132" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">SKILL.md: the conventions</text>
+          <text x="310" y="151" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">frontmatter, types, cross-links, indexes</text>
+
+          <line x1="310" y1="168" x2="310" y2="210" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#okf-arr)"/>
+
+          <!-- Output -->
+          <rect x="130" y="212" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="236" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">OKF bundle</text>
+          <text x="310" y="255" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">typed, linked, timestamped, indexable</text>
+          <text x="500" y="245" font-family="'JetBrains Mono', monospace" font-size="11" fill="#0B2E33" font-weight="600">structured</text>
+
+          <line x1="310" y1="272" x2="310" y2="298" stroke="#4F7C82" stroke-width="1.5" marker-end="url(#okf-arr)"/>
+
+          <!-- Next agent -->
+          <rect x="130" y="300" width="360" height="58" rx="6" fill="#ffffff" stroke="#4F7C82" stroke-width="1.5"/>
+          <text x="310" y="324" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="14" font-weight="600" fill="#0B2E33">Next agent reads the bundle</text>
+          <text x="310" y="343" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10.5" fill="#4F7C82">full context, cross-linked, ready to build on</text>
+        </svg>
+        <figcaption class="post-diagram-caption">The skill changes default behavior. The agent produces structured knowledge without being asked for it each time.</figcaption>
+      </figure>
+
+      <h2>What I decided early</h2>
+
+      <p>
+        <strong>Just the skill file. Nothing else.</strong> I built a Python module, a CLI, a sample bundle, all of it. Then I deleted most of it. OKF bundles are just markdown files with YAML frontmatter. Agents already know how to read and write those. What they needed was the convention, not a tool. The skill is 78 lines. That's the whole thing.
+      </p>
+
+      <p>
+        <strong>No manual install instructions.</strong> If the skill works as a plugin, that's the install path. Copying files into <code>~/.claude/skills/</code> is a workaround, not a feature. I removed it from the README. The plugin install is two commands.
+      </p>
+
+      <p>
+        <strong>Teach the behavior, not the spec.</strong> The skill doesn't dump the OKF specification into the prompt. It gives the agent enough to produce conformant bundles: the frontmatter structure, the cross-linking rules, the directory conventions, the type suggestions. The full spec is a reference, not a requirement.
+      </p>
+
+      <h2>What I took from Karpathy</h2>
+
+      <p>
+        The whole OKF concept traces back to his LLM wiki gist. But the principles I applied to the skill itself came from the guidelines he wrote about coding with agents:
+      </p>
+
+      <p>
+        <strong>Simplicity first.</strong> One markdown file. No dependencies, no SDK, no framework. The skill is the kind of thing you could paste into a <code>CLAUDE.md</code> and it would still work.
+      </p>
+
+      <p>
+        <strong>Surgical changes.</strong> The skill tells the agent to only create what's asked for, cross-link what exists, and not over-document. No speculative fields, no boilerplate nobody reads.
+      </p>
+
+      <p>
+        <strong>Think before you act.</strong> The skill tells the agent to check if an OKF bundle already exists before creating one, and to read <code>index.md</code> before drilling into concepts. Don't rebuild context that's already there.
+      </p>
+
+      <h2>How it ships</h2>
+
+      <p>
+        It's a Claude Code plugin, same format as <a href="https://github.com/catancs/context-introspect">context-introspect</a>. The repo has a <code>.claude-plugin/</code> directory with the marketplace and plugin metadata, and the skill lives at <code>skills/okf/SKILL.md</code>. Installing it:
+      </p>
+
+<pre><code>/plugin marketplace add catancs/okf-skill
+/plugin install okf-skill@okf-skill</code></pre>
+
+      <p>
+        Then just ask the agent to document something. It'll produce OKF.
+      </p>
+
+      <h2>What it looks like in practice</h2>
+
+      <p>
+        I asked it to document a Postgres orders table. Here's what it created, without me specifying any format:
+      </p>
+
+<pre><code>---
+type:        Table
+title:       Orders
+description: One row per completed customer order
+tags:        [sales, orders]
+timestamp:   2026-06-17T00:00:00Z
+---
+
+# Schema
+
+| Column       | Type   | Description             |
+|--------------|--------|-------------------------|
+| order_id     | STRING | Unique order identifier |
+| customer_id  | STRING | FK to customers         |
+
+# Related
+
+See customers.md for the join key.</code></pre>
+
+      <p>
+        Typed, linked, timestamped. The next agent that opens this bundle reads <code>index.md</code>, sees the structure, and knows exactly what it's working with. No context assembly from scratch. No guessing.
+      </p>
+
+      <h2>Why I'm sharing this</h2>
+
+      <p>
+        OKF is new. It'll only matter if people actually use it. The format is the contribution, and tools like this skill are what make it adoption-ready. It's open source, it's one file, and it takes two commands to try.
+      </p>
+
+      <p>
+        The code is on <a href="https://github.com/catancs/okf-skill">GitHub</a>.
+      </p>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>&copy; 2026 Catalin-Stefan Niculescu</span>
+      <div class="footer-links">
+        <a href="https://github.com/catancs" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.linkedin.com/in/catalin-stefan-niculescu-9aa531197/" target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../theme.js"></script>
+
+</body>
+</html>
